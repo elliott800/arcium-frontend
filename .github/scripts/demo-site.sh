@@ -20,8 +20,12 @@ npm run demo:create
 npm run build
 nohup npx next start -p "$PORT" > "server-$PORT.log" 2>&1 &
 for i in $(seq 1 60); do curl -fs -o /dev/null "http://localhost:$PORT/" && break; sleep 2; done
-curl -fs -o /dev/null "http://localhost:$PORT/api/site-info"     # the first request creates the tables and the owner account
-sleep 2
+curl -fs -o /dev/null "http://localhost:$PORT/api/site-info"
+# The first database request creates the tables and the owner account (site-info reads no database). A sign-in with
+# an account that does not exist opens the database and is refused; the 401 is expected.
+code=$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -H "Origin: http://localhost:$PORT"   -d '{"login":"nobody@example.invalid","password":"x"}' "http://localhost:$PORT/api/login")
+echo "schema request answered $code"
+[ "$code" = 401 ] || [ "$code" = 403 ] || { echo "the site could not open its database"; tail -50 "server-$PORT.log"; exit 1; }
 
 # ── simulated silos, models, engines and curves ──
 npm run demo:seed
