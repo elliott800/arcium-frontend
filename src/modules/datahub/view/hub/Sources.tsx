@@ -1,15 +1,15 @@
 'use client';
 
 // Sources: the providers the hub records from. Summary = each source's Recorder and Warehouse access and its request
-// keys (endpoints). Controller = the access switches and Source maps: Add source registers a source API, and Map source
-// stores its drill tree of main keys (what can be collected, and each key's parameters) with a downloadable markdown
-// dictionary of it (src/lib/datahubSources.ts).
+// keys (endpoints). Controller = the access switches and Source maps: Add source registers a source API with the Data
+// Hub as its connector (add_connection), and Map source stores its drill tree (keys, parameters, values) with a
+// downloadable markdown dictionary of it (src/lib/datahubSources.ts). The Recorder records from that tree.
 
 import { useEffect, useState } from 'react';
 import DrillTable from './DrillTable';
-import { api, hub, post } from './api';
+import { api, hub, post, waitFor, type HubCommand } from './api';
 import type { DhSource } from '@/lib/datahubTypes';
-import type { SourceApi } from '@/lib/datahubSources';
+import type { SourceApi, SourceOptions } from '@/lib/datahubSources';
 
 function SourcesSummary({ sources, onConfigure }: { sources: DhSource[]; onConfigure: (c: string) => void }) {
   return (
@@ -54,58 +54,99 @@ function SourcesSummary({ sources, onConfigure }: { sources: DhSource[]; onConfi
   );
 }
 
-const KEYS_HELP = `candles fx/{instrument}/{data_rate} - Completed OHLCV bars
-orderbook fx/{instrument}/orderbook - Order book snapshots`;
+const failure = (c: HubCommand) => String((c.result as { error?: string } | null)?.error ?? (c.status === 'failed' ? 'the hub refused it' : 'the hub has not answered yet'));
+
+function AddSource({ onAdded }: { onAdded: (connection: string) => void }) {
+  const [opts, setOpts] = useState<SourceOptions | null>(null);
+  const [form, setForm] = useState({ connection: '', type: '', credentials: '', seed_id: '', seed_class: '' });
+  const [classes, setClasses] = useState<string[]>([]);
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { api<SourceOptions>(hub({ view: 'source_options' })).then(setOpts).catch(e => setMsg((e as Error).message)); }, []);
+  const set = (patch: Partial<typeof form>) => setForm(f => ({ ...f, ...patch }));
+
+  async function findClasses(seed_id: string) {
+    set({ seed_id, seed_class: '' }); setClasses([]);
+    if (!seed_id) return;
+    setBusy(true); setMsg('Asking the Data Hub which source APIs this seed has…');
+    try {
+      const { control_id } = await post<{ control_id: number }>({ action: 'source_inspect', seed_id });
+      const c = await waitFor(control_id);
+      if (c.status !== 'done') { setMsg(`Could not read the seed: ${failure(c)}`); return; }
+      const found = ((c.result as { classes?: { name?: string; class?: string }[] })?.classes ?? []).map(x => String(x.name ?? x.class ?? x)).filter(Boolean);
+      setClasses(found); set({ seed_class: found[0] ?? '' });
+      setMsg(found.length ? '' : 'This seed has no source API classes.');
+    } catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
+  }
+
+  async function register() {
+    setBusy(true); setMsg('Registering the source API with the Data Hub…');
+    try {
+      const { control_id } = await post<{ control_id: number }>({ action: 'source_register', ...form });
+      const c = await waitFor(control_id);
+      if (c.status !== 'done') { setMsg(`The Data Hub did not register it: ${failure(c)}`); return; }
+      await post({ action: 'source_map', connection: form.connection.trim().toLowerCase() });
+      const keys = (c.result as { keys?: string[] })?.keys ?? [];
+      setMsg(`Registered ${form.connection} (${keys.length} key${keys.length === 1 ? '' : 's'}: ${keys.join(', ')}) and stored its map.`);
+      onAdded(form.connection.trim().toLowerCase());
+    } catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
+  }
+
+  if (!opts) return <p className="empty-state">{msg || 'Loading…'}</p>;
+  return (
+    <div className="mapping-form" aria-label="Add source">
+      <label>SOURCE NAME<input value={form.connection} onChange={e => set({ connection: e.target.value })} placeholder="my_provider" /></label>
+      <label>SOURCE API (CONNECTOR)<select value={form.type} onChange={e => set({ type: e.target.value, seed_id: '', seed_class: '' })}>
+        <option value="">Choose…</option>
+        {opts.types.map(t => <option key={t} value={t}>{t === 'seed' ? 'seed: a source API from a seed' : t}</option>)}</select></label>
+      {form.type === 'seed' && (<>
+        <label>SEED<select value={form.seed_id} disabled={busy} onChange={e => findClasses(e.target.value)}>
+          <option value="">Choose…</option>
+          {opts.seeds.map(s => <option key={s.id} value={s.id}>{s.name} v{s.version} ({s.owner})</option>)}</select></label>
+        <label>SOURCE API CLASS<select value={form.seed_class} onChange={e => set({ seed_class: e.target.value })}>
+          {classes.length ? classes.map(c => <option key={c}>{c}</option>) : <option value="">{form.seed_id ? '…' : 'choose a seed first'}</option>}</select></label>
+      </>)}
+      <label>CREDENTIALS (NAME IN THE DATA HUB SETTINGS)<input list="dh-credential-names" value={form.credentials} onChange={e => set({ credentials: e.target.value })} placeholder="oanda" />
+        <datalist id="dh-credential-names">{opts.credentials.map(c => <option key={c} value={c} />)}</datalist></label>
+      <div className="builder-selection-bar" style={{ gridColumn: '1 / -1' }}>
+        <button type="button" className="builder-action" disabled={busy || !form.connection || !form.type || !form.credentials || (form.type === 'seed' && !form.seed_class)} onClick={register}>Register source API</button>
+        <span>The Data Hub builds the connector, checks the keys it declares, and lists it as a source; then its map is stored. The credentials stay on the Data Hub: only their name is given here.</span>
+      </div>
+      {msg && <p className="controller-status" role="status" style={{ gridColumn: '1 / -1' }}>{msg}</p>}
+    </div>
+  );
+}
 
 function SourceMaps({ provider, setProvider, rainbow }: { provider: string; setProvider: (c: string) => void; rainbow: boolean }) {
   const [apis, setApis] = useState<SourceApi[] | null>(null);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ connection: '', connector: '', description: '', keys: '' });
   const load = () => api<{ sources: SourceApi[] }>(hub({ view: 'source_apis' })).then(r => setApis(r.sources)).catch(e => setMsg((e as Error).message));
   useEffect(() => { load(); }, []);
   const src = apis?.find(a => a.connection === provider) ?? apis?.[0];
 
-  async function run(body: Record<string, unknown>, done: (r: { source?: SourceApi }) => string) {
+  async function map(connection: string) {
     setBusy(true); setMsg('');
-    try { const r = await post<{ source?: SourceApi }>(body); setMsg(done(r)); await load(); return r; }
-    catch (e) { setMsg((e as Error).message); return null; } finally { setBusy(false); }
-  }
-  async function add() {
-    const r = await run({ action: 'source_add', ...form }, x => `Added ${x.source?.connection} as a source API and stored its map (${x.source?.keys.length} keys).`);
-    if (r?.source) { setProvider(r.source.connection); setAdding(false); setForm({ connection: '', connector: '', description: '', keys: '' }); }
+    try {
+      const r = await post<{ source: SourceApi }>({ action: 'source_map', connection });
+      setMsg(`Mapped ${r.source.connection}: ${r.source.keys.length} keys stored with the map's markdown.`); await load();
+    } catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
   }
 
   if (!apis) return <p className="empty-state">{msg || 'Loading source maps…'}</p>;
   return (
     <section className="agent-terminal" aria-label="Source maps">
-      <div className="panel-heading"><div><h4>Source maps</h4><p>Each source&apos;s map is its drill tree: the main keys it offers, the parameters each key takes and, for keys the hub records, the values it records. The map and its markdown are stored in the database.</p></div>
+      <div className="panel-heading"><div><h4>Source maps</h4><p>Each source is a source API registered with the Data Hub. Its map is its drill tree: the keys it offers, the parameters each key takes, and the values they take (what its recordings use, and the rates a candles key allows). The map and its markdown are stored in the database; the Recorder records from it.</p></div>
         <button type="button" className="secondary-action" onClick={() => setAdding(a => !a)}>{adding ? 'Close' : 'Add source'}</button></div>
-      {adding && (
-        <div className="mapping-form" aria-label="Add source">
-          <label>SOURCE NAME<input value={form.connection} onChange={e => setForm(f => ({ ...f, connection: e.target.value }))} placeholder="my_provider" /></label>
-          <label>CONNECTOR<input value={form.connector} onChange={e => setForm(f => ({ ...f, connector: e.target.value }))} placeholder="rest, oanda, webull…" /></label>
-          <label style={{ gridColumn: '1 / -1' }}>DESCRIPTION<input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="What this source provides" /></label>
-          <label style={{ gridColumn: '1 / -1' }}>KEYS (ONE PER LINE: KEY, PATH WITH {'{PARAMETERS}'}, - DESCRIPTION)
-            <textarea rows={5} value={form.keys} onChange={e => setForm(f => ({ ...f, keys: e.target.value }))} placeholder={KEYS_HELP} /></label>
-          <div className="builder-selection-bar" style={{ gridColumn: '1 / -1' }}>
-            <button type="button" className="builder-action" disabled={busy} onClick={add}>Add source</button>
-            <span>The source is registered as a source API and mapped; the Data Hub records it once it has a connector for it.</span>
-          </div>
-        </div>
-      )}
+      {adding && <AddSource onAdded={async c => { await load(); setProvider(c); setAdding(false); }} />}
       {src ? (<>
         <div className="builder-selection-bar">
           <label>SOURCE<select value={src.connection} onChange={e => setProvider(e.target.value)}>
-            {apis.map(a => <option key={a.connection} value={a.connection}>{a.connection}{a.origin === 'added' ? ' (added)' : ''}{a.mapped ? '' : ' · not mapped'}</option>)}</select></label>
-          <button type="button" className="builder-action" disabled={busy}
-            onClick={() => run({ action: 'source_map', connection: src.connection }, x => `Mapped ${x.source?.connection}: ${x.source?.keys.length} keys stored with the map's markdown.`)}>
-            {src.mapped ? 'Map source again' : 'Map source'}</button>
+            {apis.map(a => <option key={a.connection} value={a.connection}>{a.connection}{a.mapped ? '' : ' · not mapped'}</option>)}</select></label>
+          <button type="button" className="builder-action" disabled={busy} onClick={() => map(src.connection)}>{src.mapped ? 'Map source again' : 'Map source'}</button>
           {src.mapped && <a className="secondary-action" href={hub({ view: 'source_markdown', connection: src.connection })} download>Download markdown</a>}
-          {src.origin === 'added' && <button type="button" className="secondary-action" disabled={busy}
-            onClick={() => { if (window.confirm(`Remove ${src.connection} and its map?`)) run({ action: 'source_remove', connection: src.connection }, () => `Removed ${src.connection}.`); }}>Remove</button>}
-          <span>{src.connector || 'no'} connector · {src.keys.length} key{src.keys.length === 1 ? '' : 's'}{src.updated_at ? ` · mapped ${src.updated_at.slice(0, 16).replace('T', ' ')}${src.updated_by ? ` by ${src.updated_by}` : ''}` : ''}</span>
+          <span>{src.connector} connector{src.seed_class ? ` (${src.seed_class})` : ''} · {src.keys.length} key{src.keys.length === 1 ? '' : 's'}{src.updated_at ? ` · mapped ${src.updated_at.slice(0, 16).replace('T', ' ')}${src.updated_by ? ` by ${src.updated_by}` : ''}` : ''}</span>
         </div>
         {src.mapped
           ? <DrillTable nodes={src.tree} rainbow={rainbow} columns={{ first: `${src.connection} drill tree` }} />

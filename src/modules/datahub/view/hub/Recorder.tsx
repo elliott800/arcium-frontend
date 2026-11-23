@@ -5,6 +5,7 @@
 // (saved recording lists) and the Source Bundle Maker (build a named, source-specific list from the catalog).
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import SourceRecorder from './SourceRecorder';
 import DrillTable, { leafIds } from './DrillTable';
 import { api, hub, listCommand, lists, post, type HubList } from './api';
 import { rateName, sourceName } from '@/lib/datahubNames';
@@ -473,16 +474,17 @@ function BundleMaker({ sources, rainbow }: { sources: DhSource[]; rainbow: boole
 export default function Recorder({ panel, sources, rainbow, setRainbow, running, initialSource }: {
   panel: 'summary' | 'controller'; sources: DhSource[]; rainbow: boolean; setRainbow: (b: boolean) => void; running: boolean; initialSource?: string;
 }) {
-  const [view, setView] = useState<'registry' | 'builder'>('registry');
+  const [view, setView] = useState<'registry' | 'builder' | 'map'>('registry');
   if (panel === 'summary') return <RecorderSummary key={initialSource ?? 'all'} sources={sources} rainbow={rainbow} setRainbow={setRainbow} running={running} initialSource={initialSource} />;
   return (
     <section className="panel" aria-label="Recorder controller">
-      <div className="panel-heading"><div><h3>Recorder Controller</h3><p>Inspect the saved recording lists, or build a source bundle from a source&apos;s catalog.</p></div></div>
+      <div className="panel-heading"><div><h3>Recorder Controller</h3><p>Inspect the saved recording lists, build a source bundle from a source&apos;s catalog, or record from a source&apos;s map.</p></div></div>
       <div className="section-tabs recorder-controller-tabs" role="tablist" aria-label="Recorder controller views">
         <button className={`section-tab${view === 'registry' ? ' is-active' : ''}`} type="button" role="tab" aria-selected={view === 'registry'} onClick={() => setView('registry')}>Recorder Registry</button>
         <button className={`section-tab${view === 'builder' ? ' is-active' : ''}`} type="button" role="tab" aria-selected={view === 'builder'} onClick={() => setView('builder')}>Source Bundle Maker</button>
+        <button className={`section-tab${view === 'map' ? ' is-active' : ''}`} type="button" role="tab" aria-selected={view === 'map'} onClick={() => setView('map')}>Record from a source map</button>
       </div>
-      {view === 'registry' ? <Registry rainbow={rainbow} /> : <BundleMaker sources={sources} rainbow={rainbow} />}
+      {view === 'registry' ? <Registry rainbow={rainbow} /> : view === 'builder' ? <BundleMaker sources={sources} rainbow={rainbow} /> : <SourceRecorder rainbow={rainbow} />}
       <p className="controller-status">Recorder is {running ? 'running' : 'not running'}. Recording intervals are set per source (for example daily bars check every {fmtInterval(21600)}).</p>
     </section>
   );

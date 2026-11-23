@@ -12,13 +12,18 @@
 //   POST { action: 'access', channel: 'recorder'|'warehouse', connections, on }
 //   GET ?view=source_apis                            -> { sources: SourceApi[] }   (src/lib/datahubSources.ts)
 //   GET ?view=source_markdown&connection=            -> the source map's markdown, as a download
-//   POST { action: 'source_add', connection, connector, description, keys }  |  { action: 'source_map' | 'source_remove', connection }
+//   GET ?view=source_options                         -> { types, credentials, seeds }   (for Add source)
+//   GET ?view=command&id=                            -> { id, status, result }          (a queued hub command)
+//   POST { action: 'source_register', connection, type, credentials, seed_id?, seed_class? } -> { control_id }  (add_connection)
+//   POST { action: 'source_inspect', seed_id }       -> { control_id }   (inspect_seed: the seed's source API classes)
+//   POST { action: 'source_map', connection }        -> { source }       (builds and stores the map and its markdown)
+//   POST { action: 'source_record', connection, picks: { key: { param: [values] } } } -> { control_ids: { key: id } }
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { changeableRates, intervalFor, setWarehouseAccess } from '@/lib/datahubMap';
-import { addSource, mapSource, removeSource, sourceApis, sourceMarkdown } from '@/lib/datahubSources';
+import { commandState, inspectSeed, mapSource, recordFromMap, registerSource, sourceApis, sourceMarkdown, sourceOptions } from '@/lib/datahubSources';
 import { homeSummary, hooksById, hooksOfSources, optionLevels, recorderTree, registryTree, sourcesSummary, warehouseTree, clearTreeCache } from '@/lib/datahubTree';
 import type { DhCategory } from '@/lib/datahubTypes';
 
@@ -37,6 +42,12 @@ export async function GET(req: NextRequest) {
     if (view === 'home') return NextResponse.json(await homeSummary(), { headers });
     if (view === 'sources') return NextResponse.json({ sources: await sourcesSummary() }, { headers });
     if (view === 'source_apis') return NextResponse.json({ sources: await sourceApis() }, { headers });
+    if (view === 'source_options') return NextResponse.json(await sourceOptions(), { headers });
+    if (view === 'command') {
+      const id = Number(sp.get('id'));
+      const st = Number.isInteger(id) && id > 0 ? await commandState(id) : null;
+      return st ? NextResponse.json(st, { headers }) : NextResponse.json({ error: 'no such command' }, { status: 404 });
+    }
     if (view === 'source_markdown') {
       const connection = (sp.get('connection') ?? '').slice(0, 40);
       const md = await sourceMarkdown(connection);
@@ -149,18 +160,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, channel, on, queued: r.queued, kept_off: on ? hooks.filter(h => !h.enabled && h.disabled_by).length : 0 });
   }
 
-  if (body.action === 'source_add') {
-    const r = await addSource(body, by);
-    return typeof r === 'string' ? NextResponse.json({ error: r }, { status: 400 }) : NextResponse.json({ ok: true, source: r });
+  if (body.action === 'source_register' || body.action === 'source_inspect') {
+    const r = body.action === 'source_register' ? await registerSource(body, by) : await inspectSeed(String(body.seed_id ?? ''), by);
+    return typeof r === 'string' ? NextResponse.json({ error: r }, { status: 400 }) : NextResponse.json({ ok: true, control_id: r });
+  }
+
+  if (body.action === 'source_record') {
+    const r = await recordFromMap(body, by);
+    return typeof r === 'string' ? NextResponse.json({ error: r }, { status: 400 }) : NextResponse.json({ ok: true, control_ids: r });
   }
 
   if (body.action === 'source_map') {
     const r = await mapSource(String(body.connection ?? '').slice(0, 40), by);
     return typeof r === 'string' ? NextResponse.json({ error: r }, { status: 404 }) : NextResponse.json({ ok: true, source: r });
-  }
-
-  if (body.action === 'source_remove') {
-    return NextResponse.json({ ok: true, removed: await removeSource(String(body.connection ?? '').slice(0, 40)) });
   }
 
   return NextResponse.json({ error: 'unknown action' }, { status: 400 });

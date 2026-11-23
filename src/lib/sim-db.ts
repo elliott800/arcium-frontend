@@ -132,6 +132,9 @@ export async function seedSimulatedSystems(pool: SimPool): Promise<void> {
       await copyTemplate(String(name), pool as unknown as Pool);
     }
   }
+  // The simulated Data Hub source manager answers the commands the Data Hub page queues (src/lib/sim-hub.ts).
+  const { startSimHub } = await import('./sim-hub');
+  startSimHub(pool);
   // Every start (older .sim-db folders were made before the mock machine): register the simulated machine's key.
   const hash = createHash('sha256').update(SIM_MACHINE_KEY).digest('hex');
   await pool.query(`UPDATE machines SET api_key_hash = $1, api_key = NULL WHERE machine_name = $2`, [hash, SIM_MACHINE]);

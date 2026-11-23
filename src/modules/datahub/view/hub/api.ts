@@ -13,3 +13,14 @@ export const post = <T,>(body: Record<string, unknown>) => api<T>('/api/admin/da
 export interface HubList { name: string; kind: string; category: string | null; tags: string[]; record: boolean; members: string[]; sublists: string[] }
 export const lists = () => api<{ lists: HubList[]; running: boolean; note?: string }>('/api/admin/datahub/lists');
 export const listCommand = (body: Record<string, unknown>) => api<{ ok: boolean }>('/api/admin/datahub/lists', { method: 'POST', body: JSON.stringify(body) });
+
+export interface HubCommand { id: number; status: string; result: Record<string, unknown> | null }
+/** Waits for a queued hub command to finish (done or failed); the source manager claims commands within seconds. */
+export async function waitFor(id: number, timeoutMs = 120000): Promise<HubCommand> {
+  const end = Date.now() + timeoutMs;
+  for (;;) {
+    const c = await api<HubCommand>(hub({ view: 'command', id: String(id) }));
+    if (c.status === 'done' || c.status === 'failed' || Date.now() > end) return c;
+    await new Promise(r => setTimeout(r, 1500));
+  }
+}
