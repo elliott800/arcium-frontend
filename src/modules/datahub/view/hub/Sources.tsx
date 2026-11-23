@@ -147,6 +147,7 @@ function SourceMaps({ provider, setProvider, rainbow }: { provider: string; setP
             {apis.map(a => <option key={a.connection} value={a.connection}>{a.connection}{a.mapped ? '' : ' · not mapped'}</option>)}</select></label>
           <button type="button" className="builder-action" disabled={busy} onClick={() => map(src.connection)}>{src.mapped ? 'Map source again' : 'Map source'}</button>
           {src.mapped && <a className="secondary-action" href={hub({ view: 'source_markdown', connection: src.connection })} download>Download markdown</a>}
+          <a className="secondary-action" href={hub({ view: 'source_dictionary', connection: src.connection })} download>Download dictionary</a>
           <span>{src.connector} connector{src.seed_class ? ` (${src.seed_class})` : ''} · {src.keys.length} key{src.keys.length === 1 ? '' : 's'}{src.updated_at ? ` · mapped ${src.updated_at.slice(0, 16).replace('T', ' ')}${src.updated_by ? ` by ${src.updated_by}` : ''}` : ''}</span>
         </div>
         {src.mapped

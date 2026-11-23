@@ -17,7 +17,14 @@ import { getDb } from '@/lib/db';
 import { allowedRates } from '@/lib/datahubMap';
 import type { DhNode } from '@/lib/datahubTypes';
 
-export interface SourceKeySpec { key: string; path: string; params: Record<string, string>; description: string }
+export interface SourceKeySpec {
+  key: string; path: string; params: Record<string, string>; description: string;
+  kind: 'getter' | 'setter';   // a source key fetches (getter); a broker's order or account call changes something (setter)
+  returns: string;             // the value type a getter returns (the hub's output_kind: frame, frames, records ...)
+  incremental: boolean;        // fetches only what is new since the last run
+}
+/** The source's dictionary: every getter and setter with its argument types and the value type it returns. */
+export type SourceDictionary = Record<string, { kind: 'getter' | 'setter'; args: Record<string, string>; returns: string; incremental: boolean; path: string; description: string }>;
 export interface SourceApi {
   connection: string; connector: string; seed_class: string | null; keys: SourceKeySpec[];
   tree: DhNode[]; markdown: string; mapped: boolean; updated_by: string | null; updated_at: string | null;
@@ -51,12 +58,13 @@ async function hubSources(): Promise<{ connection: string; connector: string; se
   const rows = await getDb().prepare(`SELECT connection_name, connector_type, seed_class, keys FROM wh_connections ORDER BY connection_name`).all() as
     { connection_name: string; connector_type: string; seed_class: string | null; keys: unknown }[];
   return rows.map(r => {
-    const k = (asJson(r.keys) ?? {}) as Record<string, { path?: string; params?: Record<string, unknown>; description?: string }>;
+    const k = (asJson(r.keys) ?? {}) as Record<string, { path?: string; params?: Record<string, unknown>; description?: string; output_kind?: string; incremental?: boolean; kind?: string }>;
     return {
       connection: r.connection_name, connector: r.connector_type, seed_class: r.seed_class,
       keys: Object.entries(k).map(([key, v]) => ({
         key, path: String(v?.path ?? ''), description: String(v?.description ?? ''),
         params: Object.fromEntries(Object.entries(v?.params ?? {}).map(([p, t]) => [p, String(t)])),
+        kind: v?.kind === 'setter' ? 'setter' as const : 'getter' as const, returns: String(v?.output_kind ?? ''), incremental: !!v?.incremental,
       })).sort((a, b) => a.key.localeCompare(b.key)),
     };
   });
@@ -132,19 +140,33 @@ function valuesOf(connection: string, k: SourceKeySpec, param: string, rec: Reco
   return vals;
 }
 
+/** "candles(instrument: str, data_rate: str) -> frame": a key's arguments with their types, and what it returns. */
+function signature(k: SourceKeySpec): string {
+  const at = (p: string) => { const i = k.path.indexOf(`{${p}}`); return i < 0 ? 1e9 : i; };
+  const args = Object.entries(k.params).sort((a, b) => at(a[0]) - at(b[0]) || a[0].localeCompare(b[0])).map(([p, t]) => `${p}: ${t}`).join(', ');
+  return `${k.key}(${args})${k.kind === 'getter' && k.returns ? ` -> ${k.returns}` : ''}`;
+}
+
+/** The dictionary of a source's keys: getters and setters, their argument types, and the value type each returns. */
+export function dictionaryOf(keys: SourceKeySpec[]): SourceDictionary {
+  return Object.fromEntries(keys.map(k => [k.key, { kind: k.kind, args: k.params, returns: k.returns, incremental: k.incremental, path: k.path, description: k.description }]));
+}
+
 function buildTree(connection: string, keys: SourceKeySpec[], rec: Recorded): DhNode[] {
   return keys.map(k => {
     const r = rec.get(k.key);
     const params = paramList(k, rec);
     return {
       id: `src/${connection}/${k.key}`, label: k.key, source: connection, tags: [], count: params.length || 1,
-      contents: [k.description, k.path && `path ${k.path}`, r ? `${r.hooks.toLocaleString()} recordings` : 'not recorded yet']
+      format: `${k.kind}${k.returns ? ` → ${k.returns}` : ''}`,
+      contents: [signature(k), k.description, r ? `${r.hooks.toLocaleString()} recordings` : 'not recorded yet']
         .filter(Boolean).join(' · '),
       children: params.map(([p, type]) => {
         const vals = valuesOf(connection, k, p, rec);
         return {
           id: `src/${connection}/${k.key}/${p}`, label: p, source: connection, tags: [], count: vals.length || 1,
-          contents: `${type || 'parameter'}${vals.length ? ` · ${vals.length.toLocaleString()} value${vals.length === 1 ? '' : 's'}` : ' · add values in the Recorder'}`,
+          format: `argument: ${type || 'any'}`,
+          contents: `${vals.length ? `${vals.length.toLocaleString()} value${vals.length === 1 ? '' : 's'}` : 'add values in the Recorder'}`,
           children: vals.slice(0, SHOWN).map(v => ({
             id: valueId(connection, k.key, p, v.value), label: v.value, source: connection, tags: [], count: 1,
             contents: v.n ? `${v.n.toLocaleString()} recording${v.n === 1 ? '' : 's'}` : 'available, not recorded',
@@ -168,9 +190,12 @@ function buildMarkdown(api: { connection: string; connector: string; seed_class:
     `- Mapped: ${at}`,
     '',
   ];
+  lines.push('## Dictionary', '', 'Getters take the arguments shown and return the value type after the arrow; setters take their arguments and change something.', '', '```');
+  for (const k of keys) lines.push(`${k.kind === 'setter' ? 'set' : 'get'} ${signature(k)}`);
+  lines.push('```', '');
   for (const k of keys) {
     const r = rec.get(k.key);
-    lines.push(`## ${k.key}`, '');
+    lines.push(`## ${k.key}`, '', `\`${signature(k)}\` (${k.kind}${k.incremental ? ', incremental' : ''})`, '');
     if (k.description) lines.push(k.description, '');
     if (k.path) lines.push(`- Path: \`${k.path}\``);
     lines.push(`- Recordings: ${r ? r.hooks.toLocaleString() : 'none yet'}`, '');

@@ -12,6 +12,7 @@
 //   POST { action: 'access', channel: 'recorder'|'warehouse', connections, on }
 //   GET ?view=source_apis                            -> { sources: SourceApi[] }   (src/lib/datahubSources.ts)
 //   GET ?view=source_markdown&connection=            -> the source map's markdown, as a download
+//   GET ?view=source_dictionary&connection=          -> the source's getter/setter dictionary (argument and return types), JSON
 //   GET ?view=source_options                         -> { types, credentials, seeds }   (for Add source)
 //   GET ?view=command&id=                            -> { id, status, result }          (a queued hub command)
 //   POST { action: 'source_register', connection, type, credentials, seed_id?, seed_class? } -> { control_id }  (add_connection)
@@ -28,7 +29,7 @@ import { getDb } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { changeableRates, intervalFor, setWarehouseAccess } from '@/lib/datahubMap';
 import { assignKey, deleteKey, listKeys, removePart, saveKey } from '@/lib/datahubKeys';
-import { commandState, inspectSeed, mapSource, recordFromMap, registerSource, sourceApis, sourceMarkdown, sourceOptions } from '@/lib/datahubSources';
+import { commandState, dictionaryOf, inspectSeed, mapSource, recordFromMap, registerSource, sourceApis, sourceMarkdown, sourceOptions } from '@/lib/datahubSources';
 import { homeSummary, hooksById, hooksOfSources, optionLevels, recorderTree, registryTree, sourcesSummary, warehouseTree, clearTreeCache } from '@/lib/datahubTree';
 import type { DhCategory } from '@/lib/datahubTypes';
 
@@ -53,6 +54,14 @@ export async function GET(req: NextRequest) {
       const id = Number(sp.get('id'));
       const st = Number.isInteger(id) && id > 0 ? await commandState(id) : null;
       return st ? NextResponse.json(st, { headers }) : NextResponse.json({ error: 'no such command' }, { status: 404 });
+    }
+    if (view === 'source_dictionary') {
+      const connection = (sp.get('connection') ?? '').slice(0, 40);
+      const api = (await sourceApis()).find(x => x.connection === connection);
+      if (!api) return NextResponse.json({ error: `no source called ${connection}` }, { status: 404 });
+      return new NextResponse(JSON.stringify({ source: connection, connector: api.connector, keys: dictionaryOf(api.keys) }, null, 2), {
+        headers: { ...headers, 'Content-Type': 'application/json; charset=utf-8',
+          'Content-Disposition': `attachment; filename="${connection.replace(/[^\w-]/g, '_')}-dictionary.json"` } });
     }
     if (view === 'source_markdown') {
       const connection = (sp.get('connection') ?? '').slice(0, 40);
