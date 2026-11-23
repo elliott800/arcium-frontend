@@ -19,14 +19,15 @@
 //   POST { action: 'source_map', connection }        -> { source }       (builds and stores the map and its markdown)
 //   POST { action: 'source_record', connection, picks: { key: { param: [values] } } } -> { control_ids: { key: id } }
 //   GET ?view=keys                                   -> KeysView: the source API keys, values never included (src/lib/datahubKeys.ts)
-//   POST { action: 'key_save', id?, name, connector, fields }  |  { action: 'key_delete', id }
+//   POST { action: 'key_save', name, connector?, api_key?, secret_key?, public_key?, account_ids? }  (adds, or adds to that API)
+//   POST { action: 'key_remove', id, part?: 'api_key'|'secret_key'|'public_key'|'account', index?, masked? }  (no part: the whole API)
 //   POST { action: 'key_use', connection, id }       -> { control_id }   (the source uses that key: add_connection again)
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { changeableRates, intervalFor, setWarehouseAccess } from '@/lib/datahubMap';
-import { deleteKey, listKeys, saveKey, assignKey } from '@/lib/datahubKeys';
+import { assignKey, deleteKey, listKeys, removePart, saveKey } from '@/lib/datahubKeys';
 import { commandState, inspectSeed, mapSource, recordFromMap, registerSource, sourceApis, sourceMarkdown, sourceOptions } from '@/lib/datahubSources';
 import { homeSummary, hooksById, hooksOfSources, optionLevels, recorderTree, registryTree, sourcesSummary, warehouseTree, clearTreeCache } from '@/lib/datahubTree';
 import type { DhCategory } from '@/lib/datahubTypes';
@@ -175,8 +176,8 @@ export async function POST(req: NextRequest) {
     return typeof r === 'string' ? NextResponse.json({ ok: true, id: r }) : NextResponse.json({ error: r.error }, { status: 400 });
   }
 
-  if (body.action === 'key_delete') {
-    const r = await deleteKey(String(body.id ?? ''));
+  if (body.action === 'key_remove') {
+    const r = body.part ? await removePart(body) : await deleteKey(String(body.id ?? ''));
     return r === true ? NextResponse.json({ ok: true }) : NextResponse.json({ error: r }, { status: 400 });
   }
 

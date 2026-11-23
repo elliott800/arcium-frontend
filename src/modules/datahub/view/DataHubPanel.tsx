@@ -117,7 +117,7 @@ export default function DataHubPanel() {
               </div>
             </>
           ) : section === 'keys' ? (
-            !sources ? <p className="empty-state">Loading the Data Hub…</p> : <ApiKeys sources={sources} />
+            <ApiKeys rainbow={rainbow} />
           ) : (
             <>
               <div className="section-tabs" role="tablist" aria-label={`${LABEL[section]} views`}>
