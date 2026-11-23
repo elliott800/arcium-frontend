@@ -5,9 +5,9 @@ import 'server-only';
 // Instrument is only for a tradable asset or a spread of tradable assets (its prices, bars, option chains); anything
 // else is Reference.
 //
-// Each source owns its own map. A key with no saved map uses the default below (a reviewed suggestion); saving one
-// in the Source Controller replaces it for that source and key only. Maps are site configuration, kept in the site's
-// own tables (dh_source_maps, dh_source_access); the hub's wh_* tables are written only by the hub.
+// These placements are the defaults below (saved rows in dh_source_maps still override them). The Data Hub page's source
+// maps are drill trees of what each source offers (src/lib/datahubSources.ts). Site configuration lives in the site's own
+// tables (dh_source_maps, dh_source_access, dh_source_apis); the hub's wh_* tables are written only by the hub.
 
 import { getDb } from '@/lib/db';
 import { isOptionChain, OPTION_RATES } from '@/lib/datahubTypes';
@@ -152,47 +152,6 @@ export async function mapsFor(keys: { connection: string; key: string }[]): Prom
   return new Map(keys.map(k => [`${k.connection}.${k.key}`, saved.get(`${k.connection}.${k.key}`) ?? defaultMap(k.connection, k.key)]));
 }
 
-const TEXT = /^[\w .:&()/+#'-]{1,60}$/;
-
-/** Validates a posted map; returns the cleaned map or an error message. */
-export function cleanMap(body: Record<string, unknown>): Omit<SourceMap, 'saved'> | string {
-  const connection = String(body.connection ?? '').trim();
-  const key = String(body.key ?? '').trim();
-  if (!/^[\w.-]{1,80}$/.test(connection) || !/^[\w.-]{1,80}$/.test(key)) return 'connection and key required';
-  const category = body.category === 'reference' ? 'reference' : body.category === 'instrument' ? 'instrument' : null;
-  if (!category) return 'category must be Instrument or Reference';
-  const group = String(body.group ?? '').trim();
-  if (!TEXT.test(group)) return 'a group name is needed';
-  if (category === 'instrument' && group !== 'auto' && !(INSTRUMENT_TYPES as readonly string[]).includes(group))
-    return `instrument type must be auto or one of ${INSTRUMENT_TYPES.join(', ')}`;
-  const form = category === 'instrument' ? (['Spot', 'Future', 'Option'].includes(String(body.form)) ? body.form as SourceMap['form'] : null) : null;
-  if (category === 'instrument' && !form) return 'instrument form must be Spot, Future or Option';
-  const structure = category === 'reference' ? (body.structure === 'Unstructured' || body.structure === 'Stats' ? body.structure : 'Structured') : null;
-  const format = String(body.format ?? '');
-  if (!(FORMATS as readonly string[]).includes(format)) return `format must be one of ${FORMATS.join(', ')}`;
-  const store = String(body.store ?? '');
-  if (!(STORES as readonly string[]).includes(store)) return `destination must be one of ${STORES.join(', ')}`;
-  const item = String(body.item ?? '').trim();
-  if (item && !/^[\w]{1,40}$/.test(item)) return 'item parameter must be a parameter name';
-  const request = String(body.request ?? '').trim().slice(0, 200);
-  const tags = (Array.isArray(body.tags) ? body.tags : String(body.tags ?? '').split(','))
-    .map(t => String(t).trim().toLowerCase()).filter(t => t && TEXT.test(t)).slice(0, 20);
-  return { connection, key, category, structure, group, form, format, store: store as SourceMap['store'], item, request, tags: [...new Set(tags)] };
-}
-
-export async function saveMap(m: Omit<SourceMap, 'saved'>, by: string): Promise<void> {
-  await ensure();
-  const { connection, key, updated_by: _b, updated_at: _a, ...map } = m;
-  await getDb().prepare(`INSERT INTO dh_source_maps (connection, key, map, updated_by) VALUES (?, ?, ?::jsonb, ?)
-    ON CONFLICT (connection, key) DO UPDATE SET map = EXCLUDED.map, updated_by = EXCLUDED.updated_by, updated_at = now()`)
-    .run(connection, key, JSON.stringify(map), by);
-}
-
-export async function resetMap(connection: string, key: string): Promise<boolean> {
-  await ensure();
-  const r = await getDb().prepare(`DELETE FROM dh_source_maps WHERE connection = ? AND key = ?`).run(connection, key) as { changes?: number; rowCount?: number };
-  return (r.changes ?? r.rowCount ?? 0) > 0;
-}
 
 /** Warehouse access per source: whether its stored data is listed in the Warehouse views (default on). */
 export async function warehouseAccess(): Promise<Map<string, boolean>> {

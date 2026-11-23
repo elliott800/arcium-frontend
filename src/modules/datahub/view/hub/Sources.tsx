@@ -1,35 +1,26 @@
 'use client';
 
-// Sources: the providers the hub records from. Summary = each source's Recorder and Warehouse access, its request
-// keys (endpoints) and whether each key's map has been reviewed and saved. Controller = the access switches and the
-// Source Map Builder, which saves where each request's data belongs (category, group, form, format, destination, tags).
+// Sources: the providers the hub records from. Summary = each source's Recorder and Warehouse access and its request
+// keys (endpoints). Controller = the access switches and Source maps: Add source registers a source API, and Map source
+// stores its drill tree of main keys (what can be collected, and each key's parameters) with a downloadable markdown
+// dictionary of it (src/lib/datahubSources.ts).
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import DrillTable from './DrillTable';
-import { post } from './api';
-import type { DhNode, DhSource, DhSourceKey } from '@/lib/datahubTypes';
-
-const INSTRUMENT_TYPES = ['auto', 'Stock', 'ETF', 'ETN', 'Commodity', 'Currency', 'Crypto', 'Bond', 'Real estate', 'Spread', 'Other'];
-const REFERENCE_GROUPS = ['Financial statements', 'Valuation', 'Economic benchmarks', 'Market breadth', 'Sentiment', 'Positioning',
-  'Fund holdings', 'Order flow', 'Scanner cards', 'Text feed', 'Other'];
-const FORMATS = ['OHLCV bars', 'Option chains', 'Values', 'Records', 'Text'];
-const STORES = ['wh_ohlcv', 'wh_values', 'wh_records', 'wh_options'];
-
-const place = (k: DhSourceKey) => (k.map.category === 'instrument'
-  ? `Instrument / ${k.map.group === 'auto' ? 'by instrument' : k.map.group} / ${k.map.form ?? 'Spot'}`
-  : `Reference / ${k.map.structure ?? 'Structured'} / ${k.map.group}`);
+import { api, hub, post } from './api';
+import type { DhSource } from '@/lib/datahubTypes';
+import type { SourceApi } from '@/lib/datahubSources';
 
 function SourcesSummary({ sources, onConfigure }: { sources: DhSource[]; onConfigure: (c: string) => void }) {
   return (
     <section className="panel source-summary-panel" aria-label="Source summary">
       <div className="panel-heading"><div><h3>Source Summary</h3><p>Each source&apos;s endpoint access, its configured Recorder and Warehouse endpoints, and the readiness of its source map.</p></div></div>
       <div className="source-summary-table-wrap"><table className="source-summary-table source-operations-table">
-        <thead><tr><th>Source</th><th>Recorder status</th><th>Recorder endpoints</th><th>Warehouse status</th><th>Warehouse endpoints</th><th>Map endpoints</th><th>Map status</th></tr></thead>
+        <thead><tr><th>Source</th><th>Recorder status</th><th>Recorder endpoints</th><th>Warehouse status</th><th>Warehouse endpoints</th></tr></thead>
         <tbody>{sources.map(s => {
           const on = s.keys.reduce((n, k) => n + k.on, 0), hooks = s.keys.reduce((n, k) => n + k.hooks, 0);
           const failing = s.keys.reduce((n, k) => n + k.failing, 0);
           const recKeys = s.keys.filter(k => k.on > 0).length, whKeys = s.keys.filter(k => k.stored_series > 0).length;
-          const saved = s.keys.filter(k => k.map.saved).length;
           return (
             <tr key={s.connection}>
               <td>{s.connection}</td>
@@ -38,8 +29,6 @@ function SourcesSummary({ sources, onConfigure }: { sources: DhSource[]; onConfi
               <td>{recKeys} of {s.keys.length} configured</td>
               <td><span className={`endpoint-status ${s.warehouse ? 'is-on' : 'is-off'}`}>{s.warehouse ? 'On' : 'Off'}</span></td>
               <td>{whKeys} of {s.keys.length} with stored data</td>
-              <td>{saved} of {s.keys.length} saved</td>
-              <td>{saved === s.keys.length ? 'Mapped' : saved ? 'Partly reviewed' : 'Default map (review)'}</td>
             </tr>
           );
         })}</tbody>
@@ -47,122 +36,83 @@ function SourcesSummary({ sources, onConfigure }: { sources: DhSource[]; onConfi
       <div className="source-summary-grid">
         {sources.map(s => (
           <article key={s.connection} className="source-summary-card">
-            <header><div><h4>{s.connection}</h4><p>{s.type} connector · {s.categories.map(c => (c === 'instrument' ? 'Instrument' : 'Reference')).join(' and ')} · {s.keys.length} mapped request{s.keys.length === 1 ? '' : 's'}{s.error ? ` · last error: ${s.error.slice(0, 80)}` : ''}</p></div>
+            <header><div><h4>{s.connection}</h4><p>{s.type} connector · {s.keys.length} request key{s.keys.length === 1 ? '' : 's'}{s.error ? ` · last error: ${s.error.slice(0, 80)}` : ''}</p></div>
               <button type="button" className="secondary-action" onClick={() => onConfigure(s.connection)}>Configure source</button></header>
             <div className="source-summary-table-wrap"><table className="source-summary-table">
-              <thead><tr><th>Request</th><th>Response key</th><th>Site category</th><th>Format</th><th>Destination</th><th>Tags</th><th>Map</th></tr></thead>
+              <thead><tr><th>Request key</th><th>Recordings</th><th>On</th><th>Stored series</th><th>Stored rows</th></tr></thead>
               <tbody>{s.keys.map(k => (
-                <tr key={k.key}><td>{k.map.request || k.key}</td><td>{k.key}</td><td>{place(k)}</td><td>{k.map.format}</td><td>{k.map.store}</td>
-                  <td>{k.map.tags.join(', ') || '—'}</td><td>{k.map.saved ? 'Saved' : 'Default'}</td></tr>
+                <tr key={k.key}><td>{k.key}</td><td>{k.hooks.toLocaleString()}</td><td>{k.on.toLocaleString()}</td>
+                  <td>{k.stored_series.toLocaleString()}</td><td>{k.stored_rows.toLocaleString()}</td></tr>
               ))}</tbody>
             </table></div>
           </article>
         ))}
       </div>
       <p className="source-summary-note">Endpoint counts are the request keys configured for each source, not live provider availability; Warehouse endpoints count keys that already have stored data.
-        Source maps place each request&apos;s data in the Recorder and Warehouse trees.</p>
+        Each source&apos;s map (its drill tree of what can be collected) is under Configure source.</p>
     </section>
   );
 }
 
-function MapBuilder({ sources, provider, setProvider, onSaved, rainbow }: {
-  sources: DhSource[]; provider: string; setProvider: (c: string) => void; onSaved: () => void; rainbow: boolean;
-}) {
-  const src = sources.find(s => s.connection === provider) ?? sources[0];
-  const [key, setKey] = useState(src?.keys[0]?.key ?? '');
-  const k = src?.keys.find(x => x.key === key) ?? src?.keys[0];
-  const [form, setForm] = useState(k ? { ...k.map, tags: k.map.tags.join(', ') } : null);
+const KEYS_HELP = `candles fx/{instrument}/{data_rate} - Completed OHLCV bars
+orderbook fx/{instrument}/orderbook - Order book snapshots`;
+
+function SourceMaps({ provider, setProvider, rainbow }: { provider: string; setProvider: (c: string) => void; rainbow: boolean }) {
+  const [apis, setApis] = useState<SourceApi[] | null>(null);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
-  useEffect(() => { setKey(src?.keys[0]?.key ?? ''); }, [provider]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (k) setForm({ ...k.map, tags: k.map.tags.join(', ') }); setMsg(''); }, [k?.key, provider]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ connection: '', connector: '', description: '', keys: '' });
+  const load = () => api<{ sources: SourceApi[] }>(hub({ view: 'source_apis' })).then(r => setApis(r.sources)).catch(e => setMsg((e as Error).message));
+  useEffect(() => { load(); }, []);
+  const src = apis?.find(a => a.connection === provider) ?? apis?.[0];
 
-  async function save() {
-    if (!form || !k) return;
+  async function run(body: Record<string, unknown>, done: (r: { source?: SourceApi }) => string) {
     setBusy(true); setMsg('');
-    try {
-      await post({ action: 'map_save', connection: src.connection, key: k.key, ...form, tags: form.tags.split(',') });
-      setMsg(`Saved ${src.connection} ${k.key} to the ${src.connection} source map. The Recorder and Warehouse trees use it now.`);
-      onSaved();
-    } catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
+    try { const r = await post<{ source?: SourceApi }>(body); setMsg(done(r)); await load(); return r; }
+    catch (e) { setMsg((e as Error).message); return null; } finally { setBusy(false); }
   }
-  async function reset(connection: string, keyName: string) {
-    setBusy(true);
-    try { await post({ action: 'map_reset', connection, key: keyName }); setMsg(`${connection} ${keyName} is back to its default map.`); onSaved(); }
-    catch (e) { setMsg((e as Error).message); } finally { setBusy(false); }
+  async function add() {
+    const r = await run({ action: 'source_add', ...form }, x => `Added ${x.source?.connection} as a source API and stored its map (${x.source?.keys.length} keys).`);
+    if (r?.source) { setProvider(r.source.connection); setAdding(false); setForm({ connection: '', connector: '', description: '', keys: '' }); }
   }
 
-  // the saved map as a drill table: category -> group -> request
-  const mapTree: DhNode[] = useMemo(() => {
-    if (!src) return [];
-    const cats = new Map<string, Map<string, DhSourceKey[]>>();
-    for (const x of src.keys) {
-      const c = x.map.category === 'instrument' ? 'Instrument' : 'Reference';
-      const g = x.map.category === 'instrument' ? `${x.map.group === 'auto' ? 'By instrument' : x.map.group} / ${x.map.form}` : `${x.map.structure} / ${x.map.group}`;
-      const m = cats.get(c) ?? new Map<string, DhSourceKey[]>();
-      m.set(g, [...(m.get(g) ?? []), x]);
-      cats.set(c, m);
-    }
-    return [...cats].map(([c, groups]) => ({
-      id: `map/${c}`, label: c, tags: [], count: [...groups.values()].reduce((n, l) => n + l.length, 0),
-      children: [...groups].map(([g, keys]) => ({
-        id: `map/${c}/${g}`, label: g, tags: [], count: keys.length,
-        children: keys.map(x => ({ id: `map/${src.connection}/${x.key}`, label: `${x.key}`, source: src.connection, format: x.map.format, tags: [], count: 1,
-          contents: `${x.map.request || x.key} → ${x.map.store}${x.map.item ? ` (item: ${x.map.item})` : ''} · tags: ${x.map.tags.join(', ') || '—'} · ${x.map.saved ? `saved${x.map.updated_by ? ` by ${x.map.updated_by}` : ''}` : 'default'}` })),
-      })),
-    }));
-  }, [src]);
-
-  if (!src || !form || !k) return <p className="empty-state">No sources are registered with the hub yet.</p>;
-  const set = (patch: Partial<typeof form>) => setForm(f => f && { ...f, ...patch });
+  if (!apis) return <p className="empty-state">{msg || 'Loading source maps…'}</p>;
   return (
-    <>
-      <section className="agent-terminal" aria-label="Source map builder">
-        <div className="panel-heading"><div><h4>Source Map Builder</h4><p>Map a source&apos;s request keys to the site&apos;s Instrument or Reference groups, choose the format and warehouse destination, and tag it.</p></div>
-          <span className="terminal-badge">{k.map.saved ? 'Saved map' : 'Default suggestion'}</span></div>
-        <div className="terminal-policy"><strong>Map-only configuration</strong><p>This builder describes requests, response keys, destinations, categories and tags. It does not call the provider.
-          Provider API keys are kept encrypted in your account: <a className="text-action" href="/account/api-tools">Account › API Tools</a>.</p></div>
-        <div className="mapping-form">
-          <label>SOURCE MAP<select value={src.connection} onChange={e => setProvider(e.target.value)}>
-            {sources.map(s => <option key={s.connection} value={s.connection}>{s.connection}</option>)}</select></label>
-          <label>REQUEST KEY<select value={k.key} onChange={e => setKey(e.target.value)}>
-            {src.keys.map(x => <option key={x.key} value={x.key}>{x.key} · {x.hooks.toLocaleString()} recordings{x.map.saved ? ' · saved' : ''}</option>)}</select></label>
-          <label>CATEGORY<select value={form.category} onChange={e => set(e.target.value === 'instrument'
-            ? { category: 'instrument', structure: null, group: 'auto', form: 'Spot' } : { category: 'reference', structure: 'Structured', group: 'Other', form: null })}>
-            <option value="instrument">Instrument</option><option value="reference">Reference</option></select></label>
-          {form.category === 'instrument' ? (<>
-            <label>INSTRUMENT TYPE<select value={form.group} onChange={e => set({ group: e.target.value })}>
-              {INSTRUMENT_TYPES.map(t => <option key={t} value={t}>{t === 'auto' ? 'By instrument (auto)' : t}</option>)}</select></label>
-            <label>FORM<select value={form.form ?? 'Spot'} onChange={e => set({ form: e.target.value as 'Spot' | 'Future' | 'Option' })}>
-              {['Spot', 'Future', 'Option'].map(f => <option key={f}>{f}</option>)}</select></label>
-          </>) : (<>
-            <label>STRUCTURE<select value={form.structure ?? 'Structured'} onChange={e => set({ structure: e.target.value as 'Structured' | 'Unstructured' | 'Stats' })}>
-              <option>Structured</option><option>Unstructured</option><option>Stats</option></select></label>
-            <label>GROUP<select value={form.group} onChange={e => set({ group: e.target.value })}>
-              {[...new Set([...REFERENCE_GROUPS, form.group])].map(g => <option key={g}>{g}</option>)}</select></label>
-          </>)}
-          <label>FORMAT<select value={form.format} onChange={e => set({ format: e.target.value })}>{FORMATS.map(f => <option key={f}>{f}</option>)}</select></label>
-          <label>DESTINATION COLUMN (WAREHOUSE STORE)<select value={form.store} onChange={e => set({ store: e.target.value as typeof form.store })}>{STORES.map(s => <option key={s}>{s}</option>)}</select></label>
-          <label>ITEM PARAMETER<input value={form.item} onChange={e => set({ item: e.target.value })} placeholder="instrument, ticker, series_id…" /></label>
-          <label>REQUEST PATTERN<input value={form.request} onChange={e => set({ request: e.target.value })} placeholder="candles {instrument} {data_rate}" /></label>
-          <label style={{ gridColumn: '1 / -1' }}>TAGS (COMMA-SEPARATED)<input value={form.tags} onChange={e => set({ tags: e.target.value })} placeholder="stock, technology" /></label>
+    <section className="agent-terminal" aria-label="Source maps">
+      <div className="panel-heading"><div><h4>Source maps</h4><p>Each source&apos;s map is its drill tree: the main keys it offers, the parameters each key takes and, for keys the hub records, the values it records. The map and its markdown are stored in the database.</p></div>
+        <button type="button" className="secondary-action" onClick={() => setAdding(a => !a)}>{adding ? 'Close' : 'Add source'}</button></div>
+      {adding && (
+        <div className="mapping-form" aria-label="Add source">
+          <label>SOURCE NAME<input value={form.connection} onChange={e => setForm(f => ({ ...f, connection: e.target.value }))} placeholder="my_provider" /></label>
+          <label>CONNECTOR<input value={form.connector} onChange={e => setForm(f => ({ ...f, connector: e.target.value }))} placeholder="rest, oanda, webull…" /></label>
+          <label style={{ gridColumn: '1 / -1' }}>DESCRIPTION<input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="What this source provides" /></label>
+          <label style={{ gridColumn: '1 / -1' }}>KEYS (ONE PER LINE: KEY, PATH WITH {'{PARAMETERS}'}, - DESCRIPTION)
+            <textarea rows={5} value={form.keys} onChange={e => setForm(f => ({ ...f, keys: e.target.value }))} placeholder={KEYS_HELP} /></label>
+          <div className="builder-selection-bar" style={{ gridColumn: '1 / -1' }}>
+            <button type="button" className="builder-action" disabled={busy} onClick={add}>Add source</button>
+            <span>The source is registered as a source API and mapped; the Data Hub records it once it has a connector for it.</span>
+          </div>
         </div>
+      )}
+      {src ? (<>
         <div className="builder-selection-bar">
-          <button type="button" className="builder-action" disabled={busy} onClick={save}>Save to {src.connection} source map</button>
-          {k.map.saved && <button type="button" className="secondary-action" disabled={busy} onClick={() => reset(src.connection, k.key)}>Reset to default</button>}
-          <span>{k.hooks.toLocaleString()} recordings · {k.stored_series.toLocaleString()} stored series · {k.stored_rows.toLocaleString()} rows</span>
+          <label>SOURCE<select value={src.connection} onChange={e => setProvider(e.target.value)}>
+            {apis.map(a => <option key={a.connection} value={a.connection}>{a.connection}{a.origin === 'added' ? ' (added)' : ''}{a.mapped ? '' : ' · not mapped'}</option>)}</select></label>
+          <button type="button" className="builder-action" disabled={busy}
+            onClick={() => run({ action: 'source_map', connection: src.connection }, x => `Mapped ${x.source?.connection}: ${x.source?.keys.length} keys stored with the map's markdown.`)}>
+            {src.mapped ? 'Map source again' : 'Map source'}</button>
+          {src.mapped && <a className="secondary-action" href={hub({ view: 'source_markdown', connection: src.connection })} download>Download markdown</a>}
+          {src.origin === 'added' && <button type="button" className="secondary-action" disabled={busy}
+            onClick={() => { if (window.confirm(`Remove ${src.connection} and its map?`)) run({ action: 'source_remove', connection: src.connection }, () => `Removed ${src.connection}.`); }}>Remove</button>}
+          <span>{src.connector || 'no'} connector · {src.keys.length} key{src.keys.length === 1 ? '' : 's'}{src.updated_at ? ` · mapped ${src.updated_at.slice(0, 16).replace('T', ' ')}${src.updated_by ? ` by ${src.updated_by}` : ''}` : ''}</span>
         </div>
-        {msg && <p className="controller-status" role="status">{msg}</p>}
-      </section>
-      <div className="mapping-section">
-        <div className="panel-heading"><div><h4>Saved {src.connection} source map</h4><p>Expand category and group rows to inspect each request&apos;s destination, format and tags.</p></div></div>
-        <DrillTable nodes={mapTree} rainbow={rainbow} columns={{ first: 'Source map drill table',
-          action: { title: 'Action', cell: n => {
-            const x = src.keys.find(kk => `map/${src.connection}/${kk.key}` === n.id);
-            return x?.map.saved ? <button type="button" className="secondary-action" onClick={() => reset(src.connection, x.key)}>Reset</button> : null;
-          } } }} />
-      </div>
-    </>
+        {src.mapped
+          ? <DrillTable nodes={src.tree} rainbow={rainbow} columns={{ first: `${src.connection} drill tree` }} />
+          : <p className="empty-state">{src.connection} has not been mapped yet: Map source builds and stores its drill tree.</p>}
+      </>) : <p className="empty-state">No sources yet: Add source registers one.</p>}
+      {msg && <p className="controller-status" role="status">{msg}</p>}
+    </section>
   );
 }
 
@@ -223,7 +173,7 @@ function SourcesController({ sources, reload, provider, setProvider, rainbow }: 
         })}
       </div>
       {msg && <p className="controller-status" role="status">{msg}</p>}
-      <MapBuilder sources={sources} provider={provider} setProvider={setProvider} onSaved={reload} rainbow={rainbow} />
+      <SourceMaps provider={provider} setProvider={setProvider} rainbow={rainbow} />
     </section>
   );
 }
