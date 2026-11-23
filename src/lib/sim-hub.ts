@@ -28,6 +28,11 @@ const hookId = (connection: string, key: string, params: Row) =>
 async function handle(pool: SimPool, command: string, args: Row): Promise<Row> {
   if (command === 'add_connection') {
     const name = String(args.name), type = String(args.type);
+    const existing = (await pool.query(`SELECT keys FROM wh_connections WHERE connection_name = $1`, [name])).rows[0];
+    if (existing) {   // the real hub upserts: a connection registered again takes the new credentials reference
+      await pool.query(`UPDATE wh_connections SET credentials_ref = $2, updated_at = now() WHERE connection_name = $1`, [name, String(args.credentials ?? '')]);
+      return { connection: name, connector_type: type, enabled: true, keys: Object.keys(asJson(existing.keys) ?? {}).sort() };
+    }
     const like = (await pool.query(`SELECT keys FROM wh_connections WHERE connector_type = $1 LIMIT 1`, [type])).rows[0];
     if (!like) throw new Error(type === 'seed' ? 'seed not found (the simulated warehouse has no seeds)' : `unknown connector type '${type}'`);
     await pool.query(`INSERT INTO wh_connections (connection_name, connector_type, credentials_ref, origin, keys)

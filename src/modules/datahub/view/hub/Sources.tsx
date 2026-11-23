@@ -106,11 +106,12 @@ function AddSource({ onAdded }: { onAdded: (connection: string) => void }) {
         <label>SOURCE API CLASS<select value={form.seed_class} onChange={e => set({ seed_class: e.target.value })}>
           {classes.length ? classes.map(c => <option key={c}>{c}</option>) : <option value="">{form.seed_id ? '…' : 'choose a seed first'}</option>}</select></label>
       </>)}
-      <label>CREDENTIALS (NAME IN THE DATA HUB SETTINGS)<input list="dh-credential-names" value={form.credentials} onChange={e => set({ credentials: e.target.value })} placeholder="oanda" />
-        <datalist id="dh-credential-names">{opts.credentials.map(c => <option key={c} value={c} />)}</datalist></label>
+      <label>API KEY (FROM THE API KEYS PAGE)<select value={form.credentials} onChange={e => set({ credentials: e.target.value })}>
+        <option value="">Choose…</option>
+        {opts.credentials.map(c => <option key={c.ref} value={c.ref}>{c.label}</option>)}</select></label>
       <div className="builder-selection-bar" style={{ gridColumn: '1 / -1' }}>
         <button type="button" className="builder-action" disabled={busy || !form.connection || !form.type || !form.credentials || (form.type === 'seed' && !form.seed_class)} onClick={register}>Register source API</button>
-        <span>The Data Hub builds the connector, checks the keys it declares, and lists it as a source; then its map is stored. The credentials stay on the Data Hub: only their name is given here.</span>
+        <span>The Data Hub builds the connector, checks the keys it declares, and lists it as a source; then its map is stored. Keys are added and changed on the Data Hub&apos;s API keys page; their values never come back to the browser.</span>
       </div>
       {msg && <p className="controller-status" role="status" style={{ gridColumn: '1 / -1' }}>{msg}</p>}
     </div>

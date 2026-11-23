@@ -22,7 +22,7 @@ export interface SourceApi {
   connection: string; connector: string; seed_class: string | null; keys: SourceKeySpec[];
   tree: DhNode[]; markdown: string; mapped: boolean; updated_by: string | null; updated_at: string | null;
 }
-export interface SourceOptions { types: string[]; credentials: string[]; seeds: { id: string; name: string; version: number; owner: string }[] }
+export interface SourceOptions { types: string[]; credentials: { ref: string; label: string }[]; seeds: { id: string; name: string; version: number; owner: string }[] }
 export interface CommandState { id: number; status: string; result: Record<string, unknown> | null }
 
 const NAME = /^[a-z][a-z0-9_]{1,39}$/;
@@ -67,13 +67,19 @@ export async function sourceOptions(): Promise<SourceOptions> {
   const db = getDb();
   const [types, creds, seeds] = await Promise.all([
     db.prepare(`SELECT DISTINCT connector_type AS t FROM wh_connections ORDER BY 1`).all() as Promise<{ t: string }[]>,
-    db.prepare(`SELECT DISTINCT credentials_ref AS c FROM wh_connections WHERE credentials_ref <> '' ORDER BY 1`).all() as Promise<{ c: string }[]>,
+    db.prepare(`SELECT DISTINCT w.credentials_ref AS c, k.label, k.kind FROM wh_connections w
+                LEFT JOIN credentials k ON w.credentials_ref = 'credential:' || k.id::text
+                WHERE w.credentials_ref <> ''
+                UNION SELECT 'credential:' || id::text, label, kind FROM credentials WHERE kind LIKE 'datahub:%'
+                ORDER BY 1`).all() as Promise<{ c: string; label: string | null; kind: string | null }[]>,
     (db.prepare(`SELECT id::text AS id, seed_name, version, owner_username FROM wh_seeds WHERE NOT deleted ORDER BY seed_name, version DESC`).all() as
       Promise<{ id: string; seed_name: string; version: number; owner_username: string }[]>).catch(() => []),
   ]);
   return {
     types: [...new Set([...types.map(t => t.t), 'seed'])].sort(),
-    credentials: creds.map(c => c.c),
+    credentials: creds.map(c => ({ ref: c.c,
+      label: c.c === 'none' ? 'none (a public source, no key)' : c.label ? `${c.label} (${c.kind?.replace('datahub:', '') ?? 'key'}, API keys page)`
+        : c.c.startsWith('hub.settings:') ? `${c.c.slice('hub.settings:'.length)} (Data Hub settings file)` : c.c })),
     seeds: seeds.map(s => ({ id: s.id, name: s.seed_name, version: Number(s.version), owner: s.owner_username })),
   };
 }
@@ -225,7 +231,7 @@ export async function sourceMarkdown(connection: string): Promise<string | null>
 
 // ---- commands to the hub ------------------------------------------------------------------------------------------------
 
-async function queue(command: string, args: Record<string, unknown>, by: string): Promise<number | string> {
+export async function queue(command: string, args: Record<string, unknown>, by: string): Promise<number | string> {
   const db = getDb();
   const proc = await db.prepare(`SELECT machine_name FROM wh_process_state WHERE process_name = 'source_manager'
                                  ORDER BY last_tick_at DESC NULLS LAST LIMIT 1`).get() as { machine_name: string } | undefined;

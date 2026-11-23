@@ -18,11 +18,15 @@
 //   POST { action: 'source_inspect', seed_id }       -> { control_id }   (inspect_seed: the seed's source API classes)
 //   POST { action: 'source_map', connection }        -> { source }       (builds and stores the map and its markdown)
 //   POST { action: 'source_record', connection, picks: { key: { param: [values] } } } -> { control_ids: { key: id } }
+//   GET ?view=keys                                   -> KeysView: the source API keys, values never included (src/lib/datahubKeys.ts)
+//   POST { action: 'key_save', id?, name, connector, fields }  |  { action: 'key_delete', id }
+//   POST { action: 'key_use', connection, id }       -> { control_id }   (the source uses that key: add_connection again)
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth';
 import { changeableRates, intervalFor, setWarehouseAccess } from '@/lib/datahubMap';
+import { deleteKey, listKeys, saveKey, assignKey } from '@/lib/datahubKeys';
 import { commandState, inspectSeed, mapSource, recordFromMap, registerSource, sourceApis, sourceMarkdown, sourceOptions } from '@/lib/datahubSources';
 import { homeSummary, hooksById, hooksOfSources, optionLevels, recorderTree, registryTree, sourcesSummary, warehouseTree, clearTreeCache } from '@/lib/datahubTree';
 import type { DhCategory } from '@/lib/datahubTypes';
@@ -43,6 +47,7 @@ export async function GET(req: NextRequest) {
     if (view === 'sources') return NextResponse.json({ sources: await sourcesSummary() }, { headers });
     if (view === 'source_apis') return NextResponse.json({ sources: await sourceApis() }, { headers });
     if (view === 'source_options') return NextResponse.json(await sourceOptions(), { headers });
+    if (view === 'keys') return NextResponse.json(await listKeys(), { headers });
     if (view === 'command') {
       const id = Number(sp.get('id'));
       const st = Number.isInteger(id) && id > 0 ? await commandState(id) : null;
@@ -162,6 +167,21 @@ export async function POST(req: NextRequest) {
 
   if (body.action === 'source_register' || body.action === 'source_inspect') {
     const r = body.action === 'source_register' ? await registerSource(body, by) : await inspectSeed(String(body.seed_id ?? ''), by);
+    return typeof r === 'string' ? NextResponse.json({ error: r }, { status: 400 }) : NextResponse.json({ ok: true, control_id: r });
+  }
+
+  if (body.action === 'key_save') {
+    const r = await saveKey(body, admin.username);
+    return typeof r === 'string' ? NextResponse.json({ ok: true, id: r }) : NextResponse.json({ error: r.error }, { status: 400 });
+  }
+
+  if (body.action === 'key_delete') {
+    const r = await deleteKey(String(body.id ?? ''));
+    return r === true ? NextResponse.json({ ok: true }) : NextResponse.json({ error: r }, { status: 400 });
+  }
+
+  if (body.action === 'key_use') {
+    const r = await assignKey(String(body.connection ?? '').slice(0, 40), String(body.id ?? ''), by);
     return typeof r === 'string' ? NextResponse.json({ error: r }, { status: 400 }) : NextResponse.json({ ok: true, control_id: r });
   }
 

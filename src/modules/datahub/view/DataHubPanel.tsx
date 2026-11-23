@@ -1,7 +1,7 @@
 'use client';
 
 // The Data Hub (admin), in the Arcium Datahub layout: Home, then Recorder, Sources and Warehouse, each with a
-// Summary and a Controller. Everything shown is the hub's real data; changes go to the hub's recorder as commands.
+// Summary and a Controller, and API keys (the data sources' keys and account IDs). Everything shown is the hub's real data; changes go to the hub's recorder as commands.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useNow } from '@/ui/kit';
@@ -9,17 +9,19 @@ import Home from './hub/Home';
 import Recorder from './hub/Recorder';
 import Sources from './hub/Sources';
 import Warehouse from './hub/Warehouse';
+import ApiKeys from './hub/ApiKeys';
 import { api, hub } from './hub/api';
 import type { DhHome, DhSource } from '@/lib/datahubTypes';
 
-type Section = 'home' | 'recorder' | 'sources' | 'warehouse';
+type Section = 'home' | 'recorder' | 'sources' | 'warehouse' | 'keys';
 const SECTIONS: { id: Section; icon: string; title: string; subtitle: string }[] = [
   { id: 'home', icon: '⌂', title: 'Datahub overview', subtitle: 'Choose a data workspace to explore and manage.' },
   { id: 'recorder', icon: '◉', title: 'Recorder', subtitle: 'Review what is recorded or control the recording pipeline.' },
   { id: 'sources', icon: '⇄', title: 'Sources', subtitle: 'Inspect connected providers, map their requests and control their access.' },
   { id: 'warehouse', icon: '▤', title: 'Warehouse', subtitle: 'Explore stored data or check warehouse readiness.' },
+  { id: 'keys', icon: '⚿', title: 'API keys', subtitle: 'The keys, account IDs and settings each data source uses (admin only).' },
 ];
-const LABEL: Record<Section, string> = { home: 'Home', recorder: 'Recorder', sources: 'Sources', warehouse: 'Warehouse' };
+const LABEL: Record<Section, string> = { home: 'Home', recorder: 'Recorder', sources: 'Sources', warehouse: 'Warehouse', keys: 'API keys' };
 
 export default function DataHubPanel() {
   const now = useNow(5000);
@@ -60,7 +62,8 @@ export default function DataHubPanel() {
     { label: 'Recording lists', value: home?.recording_lists.toLocaleString(), of: home ? `of ${home.lists}` : undefined },
   ];
   const cardMetric = (id: Section) => !home ? ' ' : id === 'recorder' ? `${home.on.toLocaleString()} recording${home.failing ? ` · ${home.failing} failing` : ''}`
-    : id === 'sources' ? `${home.sources} sources connected` : `${home.rows.toLocaleString()} rows in ${home.streams.toLocaleString()} series`;
+    : id === 'sources' ? `${home.sources} sources connected` : id === 'keys' ? 'Admin only'
+    : `${home.rows.toLocaleString()} rows in ${home.streams.toLocaleString()} series`;
 
   return (
     <div className="dhx">
@@ -105,13 +108,16 @@ export default function DataHubPanel() {
                   <button key={s.id} type="button" className="home-card" onClick={() => open(s.id)}>
                     <span className="card-icon" aria-hidden="true">{s.icon}</span>
                     <span><strong>{LABEL[s.id]}</strong><small>{s.id === 'recorder' ? 'Recording status, what is recorded, and controls.'
-                      : s.id === 'sources' ? 'Connected providers, source maps and access.' : 'Stored data, date intervals and readiness.'}</small>
+                      : s.id === 'sources' ? 'Connected providers, source maps and access.'
+                      : s.id === 'keys' ? 'API keys and account IDs for the data sources.' : 'Stored data, date intervals and readiness.'}</small>
                       <em className="card-metric">{cardMetric(s.id)}</em></span>
                     <span className="card-arrow" aria-hidden="true">↗</span>
                   </button>
                 ))}
               </div>
             </>
+          ) : section === 'keys' ? (
+            !sources ? <p className="empty-state">Loading the Data Hub…</p> : <ApiKeys sources={sources} />
           ) : (
             <>
               <div className="section-tabs" role="tablist" aria-label={`${LABEL[section]} views`}>
