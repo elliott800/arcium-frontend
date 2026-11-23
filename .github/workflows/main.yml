@@ -1,0 +1,40 @@
+# Every merge to main: the walkthrough. The demo agent tours the whole suite (sign-in, the workspace, every
+# dashboard in menu order) on a demo database and keeps one continuous video plus a screenshot of each screen.
+# The Branch reviews page shows the latest one under Walkthroughs. Merging never changes the live site: the owner
+# deploys a pinned release separately (arcium_production_site/release).
+name: main walkthrough
+
+on:
+  push:
+    branches: [main]
+
+env:
+  DATABASE_URL: postgresql://postgres:ci@localhost:5432/arcium_demo
+  ARCIUM_SITE_MODE: demo
+  ARCIUM_ADMIN_EMAIL: owner@example.invalid
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  walkthrough:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: ci }
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24', cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: bash .github/scripts/demo-site.sh 3000
+      - name: tour
+        run: node tests/demo/tour.mjs --base http://localhost:3000 --out tests/demo/out --label walkthrough --all --walkthrough
+      - uses: actions/upload-artifact@v4
+        with:
+          name: walkthrough-${{ github.sha }}
+          path: tests/demo/out/walkthrough
+          retention-days: 90

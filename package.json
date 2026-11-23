@@ -1,0 +1,46 @@
+{
+  "name": "arcium-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "sim": "node scripts/sim.mjs",
+    "mock:machine": "node scripts/mock-machine.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . && node scripts/check-headers.mjs",
+    "lint:fix": "eslint . --fix",
+    "contract": "node scripts/check-contract.mjs",
+    "check": "npm run typecheck && npm run lint && npm run contract",
+    "test:gui": "node tests/gui/run.mjs",
+    "demo:create": "node scripts/local-demo.mjs create",
+    "demo:seed": "node scripts/local-demo.mjs seed"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
+    "@electric-sql/pglite": "^0.5.17",
+    "@simplewebauthn/browser": "13.3.0",
+    "@simplewebauthn/server": "13.3.3",
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.3",
+    "next": "16.2.9",
+    "pg": "^8.23.0",
+    "plotly.js-dist-min": "^3.6.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1",
+    "yaml": "2.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/pg": "^8.21.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.2.9",
+    "playwright": "^1.61.0",
+    "typescript": "^5"
+  }
+}

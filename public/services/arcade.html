@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arcium Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/static/arcade.css">
+<!-- What a shared link shows: the name and the logo card -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Arcium Arcade">
+<meta property="og:title" content="Arcium Arcade">
+<meta property="og:description" content="Practice accounts at live prices: forex, stocks and options.">
+<meta property="og:url" content="https://arcade.arciumsignals.com/">
+<meta property="og:image" content="https://serviceshub.arciumsignals.com/static/og-arcade.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://serviceshub.arciumsignals.com/static/og-arcade.png">
+<script src="/static/nav-loader.js" data-current="arcade" defer></script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-row">
+    <a class="brand" href="/arcade">ARCIUM <span>ARCADE</span></a>
+    <div class="who" id="who"></div>
+  </div>
+  <div class="ticker" id="ticker" hidden><div class="ticker-track" id="tickerTrack"></div></div>
+</header>
+
+<main class="wrap">
+  <form class="panel login" id="login" hidden>
+    <h1>Call the market. Keep score.</h1>
+    <p class="muted">Practice accounts at live prices: forex, stocks and options. One Arcium account for every Arcium site.</p>
+    <button class="btn" type="button" id="ssoBtn">Sign in with Arcium</button>
+    <p class="muted sso-new">New here? <a class="sso-signup" href="https://app.arciumsignals.com/signup">Create an Arcium account</a></p>
+    <details class="pw-login">
+      <summary>Sign in with email and password</summary>
+      <p class="muted pw-retire"></p>
+      <label>Email <input type="email" name="email" autocomplete="username" required></label>
+      <label>Password <input type="password" name="password" autocomplete="current-password" required></label>
+      <button class="btn ghost" type="submit">Sign in</button>
+    </details>
+    <div class="error" id="loginError" role="alert"></div>
+  </form>
+
+  <div id="game" hidden>
+    <section class="panel accounts">
+      <div class="row">
+        <label class="grow">Account <select id="account"></select></label>
+        <div class="stats" id="stats"></div>
+      </div>
+      <details class="new-account">
+        <summary>New account</summary>
+        <form id="newAccount" class="row">
+          <input name="name" placeholder="Name" maxlength="40">
+          <input name="balance" placeholder="Starting balance, e.g. 25000" inputmode="decimal" required>
+          <button class="btn" type="submit">Create</button>
+          <span class="error" id="accountError"></span>
+        </form>
+      </details>
+    </section>
+
+    <section class="panel ticket" id="ticket">
+      <div class="ticket-head">
+        <div><span class="sym" id="tSym">Pick an instrument from the banner</span> <span class="spot" id="tSpot"></span></div>
+        <input id="anySymbol" placeholder="or type a stock ticker" maxlength="12">
+      </div>
+      <div class="kinds" id="kinds"></div>
+      <form id="order" class="order" hidden></form>
+      <div class="error" id="orderError" role="alert"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Positions</h2>
+      <div id="positions" class="table-wrap"></div>
+    </section>
+  </div>
+</main>
+<script src="/static/arcium-sso.js"></script>
+<script src="/static/arcade.js"></script>
+</body>
+</html>

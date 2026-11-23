@@ -1,0 +1,104 @@
+/* Legacy panel (Portfolio Maker, src/legacy/factory/WatchlistPanel.tsx and ModelListStar.tsx): its rules from the
+   former portal stylesheet, on the workspace tokens (src/shell/shell.css). Goes when the panel is rebuilt on the kit. */
+.p-dash-btn--start { border-color: var(--good); color: var(--good); }
+.p-dash-btn--start:hover { background: color-mix(in srgb, var(--good) 8%, var(--surface)); }
+.p-dash-btn--sm { padding: 2px 7px; font-size: 12.5px; height: 22px; }
+.fx-favs { position: sticky; top: 8px; display: flex; flex-direction: column; max-height: calc(100dvh - 120px); border: 1px solid var(--border); border-radius: 12px; background: var(--surface); min-width: 0; }
+.fx-favs-head, .fx-favs-tools { display: flex; gap: 6px; align-items: center; padding: 10px 10px 0; }
+.fx-favs-title { font-size: 12.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin-right: auto; white-space: nowrap; }
+.fx-favs select, .fx-favs-tools input { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 7px; padding: 5px 8px; font: inherit; font-size: 13px; min-width: 0; }
+.fx-favs-tools input { flex: 1; }
+.fx-favs-list { margin: 10px; flex: 1; overflow-y: auto; border: 1px dashed transparent; border-radius: 10px; display: grid; gap: 4px; align-content: start; min-height: 120px; }
+.fx-favs-list.over { border-color: var(--accent); background: var(--accent-soft); }
+.fx-favs-empty { margin: 8px; font-size: 13px; color: var(--muted); }
+.fx-x { background: none; border: 0; color: var(--muted); font-size: 17px; line-height: 1; cursor: pointer; border-radius: 4px; padding: 0 4px; }
+.fx-x:hover, .fx-x:focus-visible { color: var(--bad); background: rgba(239, 68, 68, .1); outline: none; }
+.fx-star { position: relative; }
+.fx-star-btn { background: none; border: 0; cursor: pointer; font-size: 16px; line-height: 1; color: var(--muted); padding: 2px 4px; border-radius: 4px; }
+.fx-star-btn.on { color: var(--warn); }
+.fx-star-btn:hover, .fx-star-btn:focus-visible { background: rgba(251, 191, 36, .12); outline: none; }
+.fx-star-pop { position: absolute; right: 0; top: calc(100% + 4px); z-index: 50; min-width: 200px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); padding: 8px; display: grid; gap: 2px; }
+.fx-star-title { font-size: 11.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding: 2px 6px 4px; }
+.fx-star-item { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text); }
+.fx-star-item:hover { background: var(--accent-soft); }
+.fx-star-item small { margin-left: auto; color: var(--muted); }
+.fx-star-new { display: flex; gap: 4px; margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--border); }
+.fx-star-new input { flex: 1; min-width: 0; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; font: inherit; font-size: 12.5px; }
+.fx-star-new button { background: var(--accent-soft); color: var(--text); border: 1px solid var(--accent-soft); border-radius: 6px; padding: 3px 8px; font: inherit; font-size: 12.5px; cursor: pointer; }
+.fx-star-new button:disabled { opacity: .5; cursor: default; }
+@media (max-width: 1100px) {
+  .fx-favs { position: static; max-height: 420px; }
+}
+.fx-mini { background: none; border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 4px 8px; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.fx-mini:hover:not(:disabled) { border-color: var(--accent); }
+.fx-mini:disabled { opacity: .45; cursor: default; }
+.fx-favs-new { display: flex; gap: 4px; flex: 1; min-width: 0; }
+.fx-favs-new input { flex: 1; min-width: 0; }
+.fx-favs-head input { flex: 1; min-width: 0; background: var(--surface); color: var(--text); border: 1px solid var(--accent); border-radius: 7px; padding: 5px 8px; font: inherit; font-size: 13px; }
+.fx-ftable { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.fx-ftable th { position: sticky; top: 0; z-index: 1; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0; text-align: left; }
+.fx-ftable th.num { text-align: right; }
+.fx-ftable th button { background: none; border: 0; color: var(--muted); font: inherit; font-size: 11px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; padding: 6px 4px; cursor: pointer; white-space: nowrap; width: 100%; text-align: inherit; }
+.fx-ftable td { padding: 4px; border-bottom: 1px solid var(--border); white-space: nowrap; color: var(--text); max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+.fx-ftable td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.fx-ftable td.name { font: 600 12px ui-monospace, Consolas, monospace; color: var(--text); }
+.fx-ftable td.acts { display: flex; align-items: center; gap: 2px; max-width: none; }
+.fx-ftable tbody tr { cursor: grab; }
+.fx-ftable tbody tr:hover { background: var(--accent-soft); }
+.fx-side > .fx-favs, .fx-side > .wp { position: static; flex: 1; min-height: 0; max-height: none; }
+.fx-favs-tools .fx-seg button { padding: 4px 10px; font-size: 12px; }
+.wp-head, .wp-search, .wp-row, .wp-foot, .wp-new { display: flex; gap: 6px; align-items: center; min-width: 0; }
+.wp-new { flex: 1; }
+.wp-search { position: relative; }
+.wp-select, .wp-input { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px; font: inherit; font-size: 13px; min-width: 0; flex: 1; }
+.wp-input:focus, .wp-select:focus { border-color: var(--accent); outline: none; }
+textarea.wp-input { resize: vertical; width: 100%; font-family: ui-monospace, Consolas, monospace; }
+.wp-menu-wrap { position: relative; }
+.wp-menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 60; min-width: 200px; display: grid; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); padding: 6px; }
+.wp-menu button { background: none; border: 0; text-align: left; color: var(--text); font: inherit; font-size: 13px; padding: 7px 8px; border-radius: 6px; cursor: pointer; }
+.wp-menu button:hover, .wp-menu button:focus-visible { background: var(--accent-soft); outline: none; }
+.wp-menu button.danger { color: var(--bad); }
+.wp-menu button:disabled { opacity: .45; cursor: default; }
+.wp-hits { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 60; list-style: none; margin: 0; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); max-height: 320px; overflow-y: auto; }
+.wp-hits li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto 22px; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.wp-hits li.on { background: var(--accent-soft); }
+.wp-sym { font: 600 13px ui-monospace, Consolas, monospace; color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+.wp-cls, .wp-src { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.wp-add { text-align: center; color: var(--accent); font-weight: 700; }
+.wp-add.in { color: var(--good); }
+.wp-sheet { display: grid; gap: 6px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in srgb, var(--text) 20%, transparent); }
+.wp-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.wp-chip { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 3px 9px; font: inherit; font-size: 12px; cursor: pointer; }
+.wp-chip.on { border-color: var(--accent); color: var(--text); background: var(--accent-soft); }
+.wp-table { flex: 1; min-height: 120px; overflow-y: auto; }
+.wp-table .fx-star-btn small { font-size: 10px; margin-left: 1px; color: var(--muted); }
+.wp-dim { color: var(--muted); }
+.wp-foot { justify-content: space-between; }
+.wp-applied { font-size: 12.5px; color: var(--good); }
+.wp-msg { margin: 0; font-size: 12.5px; color: var(--muted); }
+.wp-chip.wp-tag--not { border-color: var(--bad); color: var(--text); background: rgba(239, 68, 68, .12); text-decoration: line-through; }
+.wp-tags { align-items: center; }
+.wp-filter-select { width: auto; max-width: 180px; padding: 2px 6px; font-size: 12px; }
+.wp-members { display: flex; flex-direction: column; gap: 4px; }
+.wp-member-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.wp-member-label { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-right: 2px; }
+.wp-member { display: inline-flex; align-items: center; gap: 2px; border-radius: 4px; padding: 2px 4px 2px 8px; font-size: 12px; border: 1px solid var(--border); }
+.wp-member--list { color: var(--text); border-color: var(--accent); }
+.wp-member--source { color: var(--muted); border-style: dashed; font-family: ui-monospace, monospace; }
+.wp-universe { margin: 0; font-size: 12px; }
+.wp-msg.err { color: var(--bad); }
+.wp--wide { max-width: 980px; }
+.wp--wide .wp-table { max-height: none; }
+@media (max-width: 1100px) {
+  .fx-side > .fx-favs, .fx-side > .wp { max-height: 520px; }
+}
+.fx-managers > .fx-favs, .fx-managers > .wp { position: static; max-height: 560px; }
+.wp-grip { cursor: grab; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; user-select: none; }
+.wp-grip:hover { border-color: var(--accent); color: var(--text); }
+.fx-favs-head select { margin-left: auto; }
+.fx-favs-collection { position: relative; align-items: center; }
+.fx-favs-menu-wrap { position: relative; }
+.fx-favs-menu { position: absolute; left: 0; top: calc(100% + 4px); z-index: 60; min-width: 180px; display: grid; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.45); padding: 6px; }
+.fx-favs-menu button { background: none; border: 0; text-align: left; color: var(--text); font: inherit; font-size: 13px; padding: 7px 8px; border-radius: 6px; cursor: pointer; }
+.fx-favs-menu button:hover, .fx-favs-menu button:focus-visible { background: var(--accent-soft); outline: none; }
+.fx-favs-menu button.danger { color: var(--bad); }

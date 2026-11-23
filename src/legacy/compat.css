@@ -1,0 +1,66 @@
+/* Legacy panels' styles (src/legacy: Users, Hub reviews, Hub services, Live controller, Schedule). These panels use
+   the former portal's class names; this maps them onto the workspace tokens (src/shell/shell.css) so they match the
+   rest of the site. Rewrite a panel with the m-* kit and its classes here can go.
+   Sections: buttons and inputs · admin tables · modals · control-panel blocks (c-*) · schedule cards · hub reviews */
+
+/* ── buttons and inputs ── */
+.p-dash-btn { padding: 5px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); cursor: pointer; }
+.p-dash-btn:hover { background: var(--surface-2); }
+.p-dash-btn--accent, .p-dash-btn--start { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.p-dash-btn--accent:hover, .p-dash-btn--start:hover { background: var(--accent); filter: brightness(1.08); }
+.p-dash-btn--sm { padding: 3px 9px; font-size: 13px; }
+.p-dash-btn:disabled { opacity: .5; cursor: default; }
+.p-field-input, .p-search, .p-catalog-select { padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+
+/* ── admin tables ── */
+.p-admin-section { display: grid; gap: 8px; margin-bottom: 20px; }
+.p-action-group-label { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.p-admin-scroll { overflow-x: auto; }
+.p-admin-table, .c-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.p-admin-table th, .p-admin-table td, .c-table th, .c-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+.p-admin-table th, .c-table th { background: var(--surface-2); font-size: 12px; font-weight: 600; color: var(--muted); }
+.p-admin-table tr:last-child td, .c-table tr:last-child td { border-bottom: 0; }
+.p-admin-machine-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ── modals ── */
+.p-modal-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, .35); display: grid; place-items: center; z-index: 50; }
+.p-modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); min-width: min(480px, 92vw); max-height: 85vh; overflow: auto; }
+.p-modal-header, .p-modal-body, .p-modal-footer { padding: 12px 14px; }
+.p-modal-header { border-bottom: 1px solid var(--border); }
+.p-modal-footer { border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+.p-modal-title { margin: 0; font-size: 15px; }
+
+/* ── control-panel blocks (c-*) ── */
+.c-loading { padding: 24px; color: var(--muted); }
+.c-h1 { margin: 0 0 6px; font-size: 20px; font-weight: 600; }
+.c-h2 { display: flex; align-items: center; gap: 8px; margin: 16px 0 8px; font-size: 15px; font-weight: 600; }
+.c-count { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 500;
+  background: color-mix(in srgb, var(--good) 15%, transparent); color: var(--good); }
+.c-count.bad { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
+.c-hint { color: var(--muted); margin: 4px 0; }
+.c-warn { color: var(--warn); }
+.c-ok { color: var(--good); }
+.c-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 12px; }
+.c-live .c-h2 { margin-top: 0; }
+.c-form-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.c-live-facts { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); margin: 8px 0; }
+.c-live-log, .c-review-code { font-family: var(--mono); font-size: 12px; white-space: pre-wrap; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; overflow: auto; }
+
+/* ── schedule cards ── */
+.c-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 12px 0 4px; }
+.c-card { display: grid; gap: 2px; align-content: start; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; }
+.c-card-label { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.c-card-value { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.c-card-note { font-size: 12.5px; color: var(--muted); }
+.c-card-note.bad { color: var(--bad); }
+
+/* ── hub reviews ── */
+.c-reviews { display: grid; gap: 8px; }
+.c-review { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.c-review-head { display: flex; gap: 8px; align-items: center; padding: 8px 10px; cursor: pointer; }
+.c-review-body { padding: 8px 10px; border-top: 1px solid var(--border); }
+.c-review-files { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.c-checks { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 2px; }
+.c-checks .ok { color: var(--good); }
+.c-checks .bad { color: var(--bad); }
+.c-top-link { display: inline-block; margin-top: 6px; }

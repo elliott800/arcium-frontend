@@ -1,0 +1,122 @@
+{
+ "name": "arcium frontend",
+ "about": "The frontend's own foundation in the three-repo setup (owner, Nov 17, 2026). A fresh slim build (owner, Nov 21): the workspace shell, the dashboard registry and its dashboards, the routes other services use, and the shared libraries. Proven by the GUI feature suite (which smoke-tests every registered dashboard) and the Data Hub instrument contract tests; the hooks contract is checked in arcium_production_site.",
+ "groups": [
+  {
+   "id": "shell",
+   "name": "Workspace shell and the dashboard registry",
+   "files": [
+    "src/shell/*",
+    "src/modules/registry.ts",
+    "src/modules/planned.tsx",
+    "src/app/w/**/*.tsx",
+    "src/ui/kit.tsx"
+   ]
+  },
+  {
+   "id": "dashboards",
+   "name": "Dashboards (Factory, Data Hub, Macro, Control panel, Account)",
+   "files": [
+    "src/modules/factory/*.tsx",
+    "src/modules/datahub/*.tsx",
+    "src/modules/macro/*.tsx",
+    "src/modules/control/*.tsx",
+    "src/modules/account/*.tsx"
+   ]
+  },
+  {
+   "id": "auth",
+   "name": "Sign-in, single sign-on and passkeys",
+   "files": [
+    "src/app/page.tsx",
+    "src/app/sso/*.tsx",
+    "src/app/hub-signin/*.tsx",
+    "src/app/_public/*.ts*",
+    "src/lib/auth.ts",
+    "src/lib/sso.ts",
+    "src/lib/passkeys.ts",
+    "src/proxy.ts"
+   ]
+  },
+  {
+   "id": "hooks",
+   "name": "Routes other services call (machine, SSO, hubs, alarm, workbench)",
+   "files": [
+    "src/app/api/machine/**/*.ts",
+    "src/app/api/sso/**/*.ts",
+    "src/app/api/hubs/**/*.ts",
+    "src/app/api/alarm/**/*.ts",
+    "src/app/api/workbench/**/*.ts",
+    "src/app/api/nav/**/*.ts",
+    "src/lib/machine-auth.ts",
+    "public/arcium-nav.js"
+   ]
+  },
+  {
+   "id": "data",
+   "name": "Database contract and shared libraries",
+   "files": [
+    "src/lib/db.ts",
+    "src/lib/drillTree.ts",
+    "src/lib/datahub*.ts",
+    "src/lib/warehouse*.ts",
+    "src/lib/instruments.ts",
+    "src/lib/watchlist*.ts"
+   ]
+  }
+ ],
+ "evidence": [
+  {
+   "id": "gui_suite",
+   "name": "GUI feature suite (tests/gui)",
+   "type": "gui",
+   "report": "tests/gui/out/report.json",
+   "baseline": "tests/gui/baseline.json",
+   "sources": [
+    "src"
+   ]
+  },
+  {
+   "id": "hub_contracts",
+   "name": "Data Hub instrument contracts",
+   "type": "command",
+   "cmd": [
+    "python",
+    "-m",
+    "pytest",
+    "-q",
+    "test_hub_contracts.py"
+   ],
+   "cwd": "../arcium_simulation/datahub.arciumsignals.com/datahub/hub_services/arciumhub"
+  }
+ ],
+ "required": [],
+ "layers": [
+  {
+   "level": 2,
+   "name": "Planned dashboards (in the menu, opening their plan)",
+   "items": [
+    {
+     "name": "Model tracker view",
+     "status": "planned"
+    },
+    {
+     "name": "Pinned list layers",
+     "status": "planned"
+    },
+    {
+     "name": "Portfolio rotator",
+     "status": "planned"
+    },
+    {
+     "name": "Fusion forex, stocks, playbook, alpha carry",
+     "status": "archived, planned"
+    },
+    {
+     "name": "Options and highlight scanners",
+     "status": "archived, planned"
+    }
+   ]
+  }
+ ]
+}

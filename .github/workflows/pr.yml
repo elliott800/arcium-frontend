@@ -1,0 +1,125 @@
+# Every pull request: the three checks main is protected by (Settings > Branches requires check, gui and demo).
+#
+#   check   type check + ESLint + the header rule, then a production build
+#   gui     the GUI suite (tests/gui) against a throwaway demo database
+#   demo    the demo agent (tests/demo): records the screens the change touches, before (main) and after (this
+#           branch), as screenshots and videos; the artifact feeds the owner's Branch reviews page
+#
+# No production access and no secrets: the database is a Postgres service container filled with simulated systems.
+name: pull request
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '24'
+  DATABASE_URL: postgresql://postgres:ci@localhost:5432/arcium_demo
+  ARCIUM_SITE_MODE: demo
+  ARCIUM_ADMIN_EMAIL: owner@example.invalid
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  # ── check ──
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: npm }
+      - run: npm ci
+      - run: npm run check
+      - name: build
+        run: ARCIUM_SECRET_KEY=$(openssl rand -hex 32) npm run build
+
+  # ── gui ──
+  gui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: ci }
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: demo database and site
+        run: bash .github/scripts/demo-site.sh 3000
+      - name: GUI suite
+        env: { GUI_BASELINE: tests/gui/baseline.ci.json }
+        run: node tests/gui/run.mjs http://localhost:3000
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gui-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          path: tests/gui/out
+          retention-days: 14
+
+  # ── demo (the demo agent) ──
+  demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: ci }
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '${{ env.NODE_VERSION }}', cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: which screens the change touches
+        id: screens
+        run: |
+          git diff --name-only "origin/${{ github.base_ref }}...HEAD" > tests/demo/changed.txt
+          node tests/demo/changed.mjs - < tests/demo/changed.txt > tests/demo/screens.txt
+          echo "changed files:"; cat tests/demo/changed.txt
+          echo "screens:"; cat tests/demo/screens.txt
+          echo "any=$([ -s tests/demo/screens.txt ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+
+      - name: this branch, on port 3000
+        if: steps.screens.outputs.any == 'yes'
+        run: bash .github/scripts/demo-site.sh 3000
+
+      - name: main, on port 3001 (the same demo database)
+        if: steps.screens.outputs.any == 'yes'
+        run: |
+          git worktree add ../base "origin/${{ github.base_ref }}"
+          cp .env.local ../base/.env.local
+          (cd ../base && npm ci && npm run build && (nohup npx next start -p 3001 > ../base-server.log 2>&1 &))
+          for i in $(seq 1 60); do curl -fs -o /dev/null http://localhost:3001/ && break; sleep 2; done
+
+      - name: record before and after
+        if: steps.screens.outputs.any == 'yes'
+        run: |
+          node tests/demo/tour.mjs --base http://localhost:3001 --out tests/demo/out --label before --screens-file tests/demo/screens.txt
+          node tests/demo/tour.mjs --base http://localhost:3000 --out tests/demo/out --label after --screens-file tests/demo/screens.txt
+
+      - name: summary
+        if: always()
+        run: |
+          mkdir -p tests/demo/out
+          node tests/demo/summary.mjs tests/demo/out --pr "${{ github.event.pull_request.number }}" \
+            --sha "${{ github.event.pull_request.head.sha }}" --files tests/demo/changed.txt >> "$GITHUB_STEP_SUMMARY"
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          path: tests/demo/out
+          retention-days: 30

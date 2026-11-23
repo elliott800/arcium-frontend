@@ -1,0 +1,52 @@
+{
+  "id": "sample",
+  "name": "Sample schedule",
+  "version": "1",
+  "scope": "A sample in the shape of the owner's schedule, which is kept private. The Schedule dashboard (Control panel) works the same with it: key events, tasks folded, ticks saved per task id.",
+  "revisions": [
+    { "version": "1", "date": "2026-11-22", "change": "Sample for the public repository." }
+  ],
+  "title": "Sample schedule",
+  "start": "2026-11-23",
+  "release": "2026-12-21",
+  "phases": [
+    {
+      "id": "p1",
+      "milestone": "A first dashboard built on the kit",
+      "date": "2026-12-07",
+      "title": "First dashboard",
+      "weeks": "Weeks 1-2",
+      "dates": "Nov 23 – Dec 7",
+      "goal": "A new dashboard in src/modules, listed in the registry, built from the kit.",
+      "gate": "npm run check passes and the GUI suite covers it.",
+      "groups": [
+        {
+          "title": "Build",
+          "tasks": [
+            { "id": "p1.1", "due": "2026-11-30", "text": "Write the dashboard and its registry entry." },
+            { "id": "p1.2", "due": "2026-12-07", "text": "Add its GUI feature in tests/gui/features.mjs." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "p2",
+      "milestone": "One legacy panel rebuilt on the kit",
+      "date": "2026-12-21",
+      "title": "Cleanup",
+      "weeks": "Weeks 3-4",
+      "dates": "Dec 8 – Dec 21",
+      "goal": "A panel from src/legacy rebuilt with the kit, its warnings gone (CODEMAP.md, cleanup backlog).",
+      "gate": "The owner approves the pull request on its demo recording.",
+      "groups": [
+        {
+          "title": "Rebuild",
+          "tasks": [
+            { "id": "p2.1", "due": "2026-12-21", "text": "Rebuild one legacy panel on the kit." }
+          ]
+        }
+      ]
+    }
+  ],
+  "later": []
+}

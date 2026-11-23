@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trader · Arcium Services Hub</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/trader.css">
+<!-- What a shared link shows: the name and the logo card -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Arcium Services Hub">
+<meta property="og:title" content="Trader · Arcium Services Hub">
+<meta property="og:description" content="Scans, schedule and predictions from Arcium Signals.">
+<meta property="og:url" content="https://serviceshub.arciumsignals.com/trader">
+<meta property="og:image" content="https://serviceshub.arciumsignals.com/static/og-trader.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://serviceshub.arciumsignals.com/static/og-trader.png">
+<script src="/static/nav-loader.js" data-current="trader" defer></script>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap trader-bar">
+    <a class="brand" href="/">Arcium <span class="brand-blue">Fusion Hub</span></a>
+    <nav class="nav tabs" id="tabs" hidden>
+      <a href="#home">Home</a>
+      <a href="#fundamentals">Fundamentals</a>
+      <a href="#events">Events</a>
+      <a href="#tickers">Tickers</a>
+      <a href="#schedule">Schedule</a>
+      <a href="#predictions">Predictions</a>
+      <a href="#profile">My settings</a>
+      <a href="#settings" data-admin hidden>Scanner settings</a>
+    </nav>
+    <div class="who" id="who"></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <form class="card login" id="login" hidden>
+    <h1>Trader</h1>
+    <p>One Arcium account for every Arcium site.</p>
+    <button class="btn" type="button" id="ssoBtn">Sign in with Arcium</button>
+    <p class="muted sso-new">New here? <a class="sso-signup" href="https://app.arciumsignals.com/signup">Create an Arcium account</a></p>
+    <details class="pw-login">
+      <summary>Sign in with a Fusion Hub password</summary>
+      <p class="muted pw-retire"></p>
+      <label>Email <input type="email" name="email" autocomplete="username" required></label>
+      <label>Password <input type="password" name="password" autocomplete="current-password" required></label>
+      <button class="btn" type="submit">Sign in</button>
+    </details>
+    <div class="error" id="loginError" role="alert"></div>
+  </form>
+  <div id="view"></div>
+</main>
+
+<script src="/static/arcium-sso.js"></script>
+<script src="/static/trader.js"></script>
+</body>
+</html>

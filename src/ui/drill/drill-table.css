@@ -1,0 +1,97 @@
+/* The site's standard rainbow drill table (DrillTable.tsx). Self-contained: every rule is under .arc-drill, and the
+   colours are variables so a page can restyle the chrome. Rainbow rows colour themselves (with contrast-picked text);
+   plain rows use the --drill-plain-* shades. Themes: .arc-drill--light, --dark, or --auto (follows the system). */
+
+.arc-drill {
+  --drill-border: #e6e9e2;
+  --drill-line: #edf0ea;
+  --drill-head-bg: #f5f7f2;
+  --drill-head-fg: #858c81;
+  --drill-fg: #455146;
+  --drill-fg-open: #354f38;
+  --drill-muted: #8a9187;
+  --drill-hover: rgb(0 0 0 / 4%);
+  --drill-accent: #647f5c;
+  --drill-plain-0: hsl(105 14% 88%);
+  --drill-plain-1: hsl(105 12% 92%);
+  --drill-plain-2: hsl(105 12% 95%);
+  --drill-plain-n: hsl(105 12% 97%);
+  --drill-pill-bg: rgb(255 255 255 / 70%);
+  --drill-pill-border: rgb(0 0 0 / 10%);
+  --drill-pill-fg: #5f6b5c;
+  --drill-surface: #fbfcf9;
+  overflow-x: auto;
+  border: 1px solid var(--drill-border);
+  border-radius: 5px;
+  background: var(--drill-surface);
+  color: var(--drill-fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.arc-drill--dark {
+  --drill-border: #262b28; --drill-line: #1f2421; --drill-head-bg: #151a17; --drill-head-fg: #8a958a; --drill-fg: #d3dbd1;
+  --drill-fg-open: #e8efe5; --drill-muted: #7f8a7f; --drill-hover: rgb(255 255 255 / 5%); --drill-accent: #8fae84;
+  --drill-plain-0: hsl(105 10% 18%); --drill-plain-1: hsl(105 9% 14%); --drill-plain-2: hsl(105 8% 12%); --drill-plain-n: hsl(105 8% 10%);
+  --drill-pill-bg: rgb(255 255 255 / 8%); --drill-pill-border: rgb(255 255 255 / 14%); --drill-pill-fg: #c7d1c4; --drill-surface: #0f1311;
+}
+@media (prefers-color-scheme: dark) {
+  .arc-drill--auto {
+    --drill-border: #262b28; --drill-line: #1f2421; --drill-head-bg: #151a17; --drill-head-fg: #8a958a; --drill-fg: #d3dbd1;
+    --drill-fg-open: #e8efe5; --drill-muted: #7f8a7f; --drill-hover: rgb(255 255 255 / 5%); --drill-accent: #8fae84;
+    --drill-plain-0: hsl(105 10% 18%); --drill-plain-1: hsl(105 9% 14%); --drill-plain-2: hsl(105 8% 12%); --drill-plain-n: hsl(105 8% 10%);
+    --drill-pill-bg: rgb(255 255 255 / 8%); --drill-pill-border: rgb(255 255 255 / 14%); --drill-pill-fg: #c7d1c4; --drill-surface: #0f1311;
+  }
+}
+
+.arc-drill-table { width: 100%; border-collapse: collapse; text-align: left; }
+.arc-drill-table th {
+  padding: 10px 12px; border-bottom: 1px solid var(--drill-border); background: var(--drill-head-bg); color: var(--drill-head-fg);
+  font-size: 11.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap;
+}
+.arc-drill-table td { padding: 0 10px; border-bottom: 1px solid var(--drill-line); font-size: 12.5px; line-height: 1.4; vertical-align: middle; }
+.arc-drill-table td:first-child { padding: 0; }
+.arc-drill-table tr:last-child td { border-bottom: 0; }
+
+/* plain (non-rainbow) rows: progressively lighter by depth */
+.arc-drill:not(.is-rainbow) .arc-drill-tr > td { background: var(--drill-plain-n); }
+.arc-drill:not(.is-rainbow) .arc-drill-tr[data-depth="0"] > td { background: var(--drill-plain-0); }
+.arc-drill:not(.is-rainbow) .arc-drill-tr[data-depth="1"] > td { background: var(--drill-plain-1); }
+.arc-drill:not(.is-rainbow) .arc-drill-tr[data-depth="2"] > td { background: var(--drill-plain-2); }
+
+.arc-drill-name { display: flex; min-height: 39px; align-items: center; gap: 6px; }
+.arc-drill-toggle-row, .arc-drill-leaf {
+  display: flex; min-width: 0; min-height: 39px; flex: 1; align-items: center; gap: 9px; padding: 0 12px 0 4px;
+  border: 0; background: transparent; color: inherit; font: inherit; text-align: left;
+}
+.arc-drill-toggle-row { cursor: pointer; }
+.arc-drill-toggle-row:hover { background: var(--drill-hover); }
+.arc-drill-toggle-row[aria-expanded="true"] { font-weight: 600; }
+.arc-drill:not(.is-rainbow) .arc-drill-toggle-row[aria-expanded="true"] { color: var(--drill-fg-open); }
+.arc-drill-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arc-drill-chevron { width: 12px; flex: 0 0 12px; opacity: .7; transition: transform .12s; }
+.arc-drill-toggle-row[aria-expanded="true"] .arc-drill-chevron { transform: rotate(90deg); }
+.arc-drill-count { margin-left: auto; font-size: 11.5px; opacity: .7; }
+.arc-drill-check { width: 13px; height: 13px; flex: 0 0 13px; margin: 0 0 0 8px; accent-color: var(--drill-accent); }
+
+.arc-drill-pill {
+  display: inline-block; flex: 0 0 auto; padding: 2px 7px; border: 1px solid var(--drill-pill-border); border-radius: 99px;
+  background: var(--drill-pill-bg); color: var(--drill-pill-fg); font-size: 11.5px; font-weight: 500;
+}
+.arc-drill.is-rainbow .arc-drill-pill { color: #3f4a3d; }
+.arc-drill-pill.is-on { background: #edf4e9; color: #4c6744; }
+.arc-drill-pill.is-off { background: #f4eeeb; color: #8a6259; }
+.arc-drill-pill.is-bad { background: #f6e3df; color: #8a4b40; }
+.arc-drill-pill.is-warn { background: #f7f0de; color: #7a6330; }
+
+.arc-drill-empty { padding: 24px; color: var(--drill-muted); font-size: 13px; text-align: center; }
+.arc-drill-more {
+  margin: 6px 0; min-height: 30px; padding: 0 10px; border: 1px solid var(--drill-border); border-radius: 4px;
+  background: var(--drill-surface); color: var(--drill-fg); cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 600;
+}
+.arc-drill-more:hover { border-color: var(--drill-accent); }
+
+.arc-drill-toggle { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; font-size: 12.5px; }
+.arc-drill-toggle input { accent-color: #687f5e; }
+
+.arc-drill button:focus-visible, .arc-drill input:focus-visible { outline: 3px solid #a8bb99; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .arc-drill-chevron { transition: none; } }

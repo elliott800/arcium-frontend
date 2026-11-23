@@ -1,0 +1,31 @@
+{
+  "note": "CI baseline: features that need no recorded data (a fresh demo database). Widen it after a CI run with GUI_BASELINE=tests/gui/baseline.ci.json node tests/gui/run.mjs <url> --update-baseline.",
+  "updated": "2026-11-22T04:03:47.554Z",
+  "features": 24,
+  "passing": [
+    "shell.home",
+    "shell.menu",
+    "shell.open",
+    "shell.tabs",
+    "shell.dock",
+    "shell.panel",
+    "shell.checklist",
+    "shell.workspaces",
+    "shell.account",
+    "module.account.profile",
+    "module.planned.model-tracker",
+    "module.planned.pinned-lists",
+    "module.planned.portfolio-rotator",
+    "module.planned.fusion-forex",
+    "module.planned.fusion-stocks",
+    "module.planned.fusion-playbook",
+    "module.planned.fusion-alpha-carry",
+    "module.planned.options-scanner",
+    "module.planned.highlight-scanner",
+    "module.planned.fusion-home",
+    "public.signin",
+    "public.gate",
+    "public.old-address",
+    "public.api-gate"
+  ]
+}

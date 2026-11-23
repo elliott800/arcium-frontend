@@ -1,0 +1,92 @@
+/* Legacy panel (Control panel > Schedule): Release 1, key events with their tasks folded. Uses the workspace
+   tokens (src/shell/shell.css) and the c-* classes in src/legacy/compat.css. */
+.s-main { max-width: 980px; width: 100%; margin: 0 auto; }
+.s-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+.s-actions { display: flex; gap: 8px; }
+.s-btn { font: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); cursor: pointer; text-decoration: none; }
+.s-btn:hover { border-color: var(--accent); }
+.s-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.s-card { cursor: default; }
+.s-card:hover { border-color: var(--border); }
+.s-small { font-size: 15px; line-height: 1.3; }
+
+.s-next { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; color: var(--text); }
+.s-next span { display: inline-block; min-width: 56px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.s-next span.bad { color: var(--bad); }
+
+.s-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 22px 0 6px; }
+.s-chip { font: inherit; font-size: 12.5px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--border);
+  background: none; color: var(--muted); cursor: pointer; }
+.s-chip.active { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+
+.s-phase { margin-top: 18px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); break-inside: auto; }
+.s-phase-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px;
+  padding: 10px 16px; background: var(--surface-2); color: var(--text); border-bottom: 1px solid var(--border); }
+.s-phase-head.later { background: var(--border); color: var(--text); }
+.s-phase-head h2 { margin: 0; font-size: 15px; font-weight: 700; }
+.s-phase-head span { font-size: 12.5px; opacity: .85; }
+.s-phase-body { padding: 10px 16px 14px; }
+.s-goal { margin: 2px 0; font-size: 13px; color: var(--text); }
+.s-gate { margin: 2px 0 10px; font-size: 13px; color: var(--muted); font-style: italic; }
+.s-gate strong { font-style: normal; }
+.s-bar { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.s-bar span { display: block; height: 100%; background: var(--good); border-radius: 999px; transition: width .2s; }
+.s-bar-note { font-size: 12.5px; color: var(--muted); margin: 4px 0 8px; }
+
+.s-cols, .s-task { display: grid; grid-template-columns: minmax(0, 1fr) 84px 132px; gap: 10px; align-items: center; }
+.s-cols { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 4px 0; }
+.s-cols span:first-child { padding-left: 28px; }
+.s-group h3 { margin: 10px 0 2px; font-size: 13px; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 3px; }
+.s-phase ul { list-style: none; margin: 0; padding: 0; }
+.s-task { padding: 5px 0; border-bottom: 1px dashed var(--border); font-size: 13px; }
+.s-task:last-child { border-bottom: 0; }
+.s-check { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; min-width: 0; }
+.s-check input { width: 18px; height: 18px; margin: 1px 0 0; flex: none; accent-color: var(--good); cursor: pointer; }
+.s-text { color: var(--text); overflow-wrap: anywhere; }
+.s-task.done .s-text { color: var(--muted); text-decoration: line-through; }
+.s-due { font-weight: 700; font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--text); }
+.s-task.late .s-due { color: var(--bad); }
+.s-done input { width: 100%; font: inherit; font-size: 13px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); }
+.s-task:not(.done) .s-done input { color: var(--muted); border-style: dashed; }
+
+@media (max-width: 640px) {
+  .c-main.s-main { padding: 16px 16px 40px; }
+  .s-cols { display: none; }
+  .s-task { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'check check' 'due done'; row-gap: 4px; }
+  .s-check { grid-area: check; }
+  .s-due { grid-area: due; padding-left: 28px; }
+  .s-done { grid-area: done; }
+}
+
+/* Paper: white page, black ink, no buttons; boxes print as boxes. */
+@media print {
+  .s-noprint { display: none !important; }
+  .c-wrap.s-wrap { height: auto; overflow: visible; background: #fff; color: #000; }
+  .s-main { max-width: none; padding: 0; }
+  .c-h1, .s-text, .s-goal, .s-due, .s-next span, .c-card-value { color: #000 !important; }
+  .c-card, .s-phase { background: #fff; border-color: #bbb; }
+  .s-phase { break-inside: avoid-page; }
+  .s-group { break-inside: avoid; }
+  .s-phase-head { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .s-done input { border: 0; border-bottom: 1px solid #999; border-radius: 0; background: none; color: #000; }
+}
+
+/* Schedule names, revisions and Schedule 1 */
+.s-rev { font-size: 13px; font-weight: 600; vertical-align: middle; padding: 2px 8px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent); cursor: help; }
+.s-scope { margin-top: -4px; }
+.s-note { display: block; font-style: normal; font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+.s-backlog .s-phase-head.later { background: var(--surface-2); color: var(--muted); }
+
+/* key events: one row per milestone, tasks folded beneath */
+.s-milestone > summary { cursor: pointer; list-style: none; align-items: center; }
+.s-milestone > summary::-webkit-details-marker { display: none; }
+.s-milestone > summary h2 { flex: 1 1 auto; }
+.s-ms-mark { font-size: 14px; width: 18px; text-align: center; opacity: .9; }
+.s-milestone.met .s-ms-mark { color: var(--good); }
+.s-ms-date { font-weight: 600; }
+.s-ms-prog { font-variant-numeric: tabular-nums; }
+.s-phase-title { margin: 2px 0 6px; font-size: 12.5px; opacity: .75; }
+@media print { .s-milestone > :not(summary) { display: block !important; } }

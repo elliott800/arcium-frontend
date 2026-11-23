@@ -1,0 +1,85 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+build-check.log
+dev-server*.log
+devserver.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# claude code local settings
+.claude/
+
+# local sqlite runtime files
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# local logs, screenshots, editor backups, old SQLite data
+*.log
+*.log.err
+/*.png
+*.bak_*
+/portal.db*
+/data/
+
+# ArciumAlarm APK served by /download/alarm (large binary, copied in from python/arcium_alarm)
+/downloads/*
+# The schedule PDF is small and built from src/lib/schedule.json (scripts/schedule_pdf.py)
+!/downloads/Arcium_10_Week_Schedule.pdf
+
+# Fusion importer staging copy (scripts/fusion_import_workbook.py)
+/content/fusion/_import/
+
+# foundation runs and python caches
+foundation/evidence_runs.json
+__pycache__/
+
+# the template of .env.local stays in git
+!.env.example
+
+# the demo agent and the GUI suite write here (CI uploads them as artifacts)
+/tests/demo/out/
+/tests/demo/changed.txt
+/tests/demo/screens.txt
+/server-*.log
+
+# simulated backend database (npm run sim)
+/.sim-db/
+/.next-sim/

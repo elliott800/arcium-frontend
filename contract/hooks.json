@@ -1,0 +1,430 @@
+{
+ "about": "The hooks arcium frontend and arcium backend snap together on, and nothing else (arcium_backend/MERGE_POINTS.md explains each). check_hooks.py proves both repos keep to it: the frontend serves every machine route with its methods and every site route other services use, the backend calls only routes listed here, and the frontend reads only the environment settings listed here. Change a hook here first, then in both repos.",
+ "routes": [
+  {
+   "path": "/machine/sync",
+   "methods": [
+    "POST"
+   ],
+   "caller": "backend",
+   "what": "heartbeat and every pushed table"
+  },
+  {
+   "path": "/machine/commands",
+   "methods": [
+    "GET"
+   ],
+   "caller": "backend",
+   "what": "the command queue the GUI fills"
+  },
+  {
+   "path": "/machine/commands/{id}/ack",
+   "methods": [
+    "POST"
+   ],
+   "caller": "backend",
+   "what": "a command's result (completed / failed)"
+  },
+  {
+   "path": "/machine/credentials/{id}",
+   "methods": [
+    "GET"
+   ],
+   "caller": "backend",
+   "what": "a broker credential handed to this machine"
+  },
+  {
+   "path": "/machine/assignments",
+   "methods": [
+    "GET",
+    "POST"
+   ],
+   "caller": "backend",
+   "what": "which accounts and silos this machine serves"
+  },
+  {
+   "path": "/machine/seeds",
+   "methods": [
+    "POST"
+   ],
+   "caller": "backend",
+   "what": "a seed collected from a silo, uploaded for the hub to validate"
+  },
+  {
+   "path": "/machine/seeds/{id}",
+   "methods": [
+    "GET"
+   ],
+   "caller": "backend",
+   "what": "one seed bundle to plant"
+  },
+  {
+   "path": "/machine/bars",
+   "methods": [
+    "GET"
+   ],
+   "caller": "backend",
+   "what": "recorded bars (the seeds' hub source)"
+  },
+  {
+   "path": "/machine/live-status",
+   "methods": [
+    "POST"
+   ],
+   "caller": "backend",
+   "what": "the laptop launcher's live status"
+  },
+  {
+   "path": "/machine/warehouse/catalog",
+   "methods": [
+    "GET"
+   ],
+   "caller": "backend",
+   "what": "the Data Hub warehouse catalog"
+  },
+  {
+   "path": "/machine/warehouse/read",
+   "methods": [
+    "GET"
+   ],
+   "caller": "backend",
+   "what": "a Data Hub warehouse read"
+  }
+ ],
+ "auth_headers": [
+  "x-machine-name",
+  "x-machine-key"
+ ],
+ "frontend_env": {
+  "hooks": [
+   "DATABASE_URL",
+   "APP_ORIGIN",
+   "SITE_URL",
+   "DATAHUB_ORIGIN",
+   "DEMO_SITE_URL",
+   "ARCIUM_SITE_MODE",
+   "SERVICES_ORIGIN",
+   "ARCADE_ORIGIN",
+   "SERVICES_API_URL"
+  ],
+  "site_only": [
+   "NODE_ENV",
+   "ARCIUM_SECRET_KEY",
+   "ARCIUM_ADMIN_EMAIL",
+   "ARCIUM_ADMIN_PASSWORD",
+   "ARCIUM_PRIVATE_DIR",
+   "ARCIUM_SIGNUP_OPEN",
+   "SSO_EXTRA_ORIGINS",
+   "NAV_EXTRA_ORIGINS",
+   "HUB_EXTRA_ORIGINS",
+   "SMTP_HOST",
+   "SMTP_PORT",
+   "SMTP_USER",
+   "SMTP_PASS",
+   "MAIL_FROM",
+   "RESEND_API_KEY",
+   "ANTHROPIC_API_KEY",
+   "ALARM_MODEL",
+   "ALARM_ACCESS",
+   "REVIEWS_DIR",
+   "GITHUB_REVIEW_TOKEN",
+   "NEXT_DIST_DIR"
+  ]
+ },
+ "backend_settings": {
+  "controller/machine.settings": [
+   "machine_name",
+   "web_sync.enabled",
+   "web_sync.url",
+   "web_sync.api_key",
+   "catalog_pg",
+   "silo_db_dir"
+  ],
+  "managers/silo_manager/database.settings": [
+   "username"
+  ]
+ },
+ "site_routes": {
+  "about": "Routes and pages other services reach on the app (not the backend): the hubs' single sign-on and repos, the Dashboards menu script, the ArciumAlarm phone app, the seed workbench, passkeys, sign-in. The frontend must keep serving each.",
+  "routes": [
+   {
+    "path": "/api/sso/accept",
+    "caller": "hubs (sign-in hand-off)"
+   },
+   {
+    "path": "/api/sso/me",
+    "caller": "hubs"
+   },
+   {
+    "path": "/api/sso/pass",
+    "caller": "hubs"
+   },
+   {
+    "path": "/api/sso/profile",
+    "caller": "hubs"
+   },
+   {
+    "path": "/api/hubs/me",
+    "caller": "Data/Broker/Seed hubs"
+   },
+   {
+    "path": "/api/hubs/{hub}/repos",
+    "caller": "hubs"
+   },
+   {
+    "path": "/api/hubs/{hub}/repos/{owner}/{name}",
+    "caller": "hubs"
+   },
+   {
+    "path": "/api/hubs/{hub}/repos/{owner}/{name}/versions",
+    "caller": "hubs"
+   },
+   {
+    "path": "/api/hubs/{hub}/repos/{owner}/{name}/versions/{number}",
+    "caller": "hubs"
+   },
+   {
+    "path": "/api/nav",
+    "caller": "arcium-nav.js on every Arcium site"
+   },
+   {
+    "path": "/api/alarm/login",
+    "caller": "ArciumAlarm app"
+   },
+   {
+    "path": "/api/alarm/logout",
+    "caller": "ArciumAlarm app"
+   },
+   {
+    "path": "/api/alarm/command",
+    "caller": "ArciumAlarm app"
+   },
+   {
+    "path": "/api/workbench/login",
+    "caller": "seed workbench (arcium-signals)"
+   },
+   {
+    "path": "/api/workbench/instruments",
+    "caller": "seed workbench"
+   },
+   {
+    "path": "/api/workbench/bars",
+    "caller": "seed workbench"
+   },
+   {
+    "path": "/api/passkey/login/options",
+    "caller": "sign-in"
+   },
+   {
+    "path": "/api/passkey/login/verify",
+    "caller": "sign-in"
+   },
+   {
+    "path": "/api/login",
+    "caller": "sign-in, GUI suite"
+   },
+   {
+    "path": "/api/logout",
+    "caller": "every site"
+   },
+   {
+    "path": "/api/me",
+    "caller": "Data Hub host"
+   },
+   {
+    "path": "/api/admin/datahub",
+    "caller": "datahub.arciumsignals.com"
+   }
+  ],
+  "pages": [
+   "/",
+   "/sso",
+   "/hub-signin",
+   "/workspace",
+   "/datahub"
+  ],
+  "static": [
+   "/arcium-nav.js"
+  ]
+ },
+ "services_api": {
+  "about": "The Services Hub API (Fusion Hub, Python): what the Services Hub and Arcade pages, which this frontend serves on serviceshub.arciumsignals.com and arcade.arciumsignals.com (public/services/), call under /v1. In production nginx sends /v1 on those hosts to the service; the frontend's simulated one (src/lib/sim-services.ts) answers every route here for local development. Each call after sign-in carries Authorization: Bearer <token>.",
+  "routes": [
+   {
+    "path": "/v1/status",
+    "methods": [
+     "GET"
+    ],
+    "what": "version, market data delay, ssoUrl (the app for Sign in with Arcium)"
+   },
+   {
+    "path": "/v1/tools",
+    "methods": [
+     "GET"
+    ],
+    "what": "the tools and their routes (the front page lists them)"
+   },
+   {
+    "path": "/v1/auth/login",
+    "methods": [
+     "POST"
+    ],
+    "what": "{email, password} -> {token, email, role}"
+   },
+   {
+    "path": "/v1/auth/sso",
+    "methods": [
+     "POST"
+    ],
+    "what": "{pass} from the app's /sso (client fusionhub) -> {token, email, role}"
+   },
+   {
+    "path": "/v1/me",
+    "methods": [
+     "GET"
+    ],
+    "what": "{email, role, plan}"
+   },
+   {
+    "path": "/v1/auth/logout",
+    "methods": [
+     "POST"
+    ],
+    "what": "ends the token"
+   },
+   {
+    "path": "/v1/tools/arcade/banner",
+    "methods": [
+     "GET"
+    ],
+    "what": "the ticker banner: forex pairs and stocks with price and change"
+   },
+   {
+    "path": "/v1/tools/arcade/quote",
+    "methods": [
+     "GET"
+    ],
+    "what": "?symbol -> price, change, kind"
+   },
+   {
+    "path": "/v1/tools/arcade/options",
+    "methods": [
+     "GET"
+    ],
+    "what": "?symbol[&expiration] -> expirations, or the chain near spot"
+   },
+   {
+    "path": "/v1/tools/arcade/accounts",
+    "methods": [
+     "GET"
+    ],
+    "what": "the player's practice accounts"
+   },
+   {
+    "path": "/v1/tools/arcade/accounts",
+    "methods": [
+     "POST"
+    ],
+    "what": "{name, balance}: a new account"
+   },
+   {
+    "path": "/v1/tools/arcade/delete-account",
+    "methods": [
+     "POST"
+    ],
+    "what": "{account_id}"
+   },
+   {
+    "path": "/v1/tools/arcade/open",
+    "methods": [
+     "POST"
+    ],
+    "what": "{account_id, kind: forex|stock|option, symbol, qty, side, expires | right, expiration, strike}"
+   },
+   {
+    "path": "/v1/tools/arcade/close",
+    "methods": [
+     "POST"
+    ],
+    "what": "{position_id}: close at spot, or the bid for options"
+   },
+   {
+    "path": "/v1/tools/arcade/positions",
+    "methods": [
+     "GET"
+    ],
+    "what": "?account_id -> the account (cash, held, equity, return) and its positions"
+   },
+   {
+    "path": "/v1/tools/trader/profile",
+    "methods": [
+     "GET"
+    ],
+    "what": "the trader profile (secrets write-only)"
+   },
+   {
+    "path": "/v1/tools/trader/profile",
+    "methods": [
+     "POST"
+    ],
+    "what": "{broker, cash_rate_fallback, calendar_url, webull_app_key, webull_app_secret}"
+   },
+   {
+    "path": "/v1/tools/trader/calendar",
+    "methods": [
+     "GET"
+    ],
+    "what": "?from&to -> my calendar next to the Stock Scanner's"
+   },
+   {
+    "path": "/v1/tools/trader/settings",
+    "methods": [
+     "GET"
+    ],
+    "what": "the scanner settings (admin)"
+   },
+   {
+    "path": "/v1/tools/trader/settings",
+    "methods": [
+     "POST"
+    ],
+    "what": "{changes} (admin)"
+   },
+   {
+    "path": "/v1/tools/trader/predictions",
+    "methods": [
+     "GET"
+    ],
+    "what": "locked predictions, scored as they come due, with a summary"
+   },
+   {
+    "path": "/v1/tools/trader/lock",
+    "methods": [
+     "POST"
+    ],
+    "what": "{ticker, targets, until, note}"
+   },
+   {
+    "path": "/v1/tools/trader/delete",
+    "methods": [
+     "POST"
+    ],
+    "what": "{id}: an open prediction"
+   },
+   {
+    "path": "/v1/tools/trader/export",
+    "methods": [
+     "GET"
+    ],
+    "what": "the predictions spreadsheet"
+   },
+   {
+    "path": "/v1/tools/full-scan/data",
+    "methods": [
+     "GET"
+    ],
+    "what": "?workbook=trading -> the FUll SCAN sections the Trader page shows"
+   }
+  ]
+ }
+}

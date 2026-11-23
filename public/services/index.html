@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arcium Services Hub</title>
+<link rel="stylesheet" href="/static/style.css">
+<style>
+  .tools { display: grid; gap: 12px; margin-top: 20px; }
+  .tools .card h2 { margin: 0 0 6px; font-size: 17px; }
+  .tools .card p { margin: 0 0 10px; color: var(--muted); }
+  .tools code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+  .status { color: var(--muted); font-size: 13px; margin-top: 8px; }
+</style>
+<!-- What a shared link shows: the name and the logo card -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Arcium Services Hub">
+<meta property="og:title" content="Arcium Services Hub">
+<meta property="og:description" content="Scanners and tools from Arcium Signals.">
+<meta property="og:url" content="https://serviceshub.arciumsignals.com/">
+<meta property="og:image" content="https://serviceshub.arciumsignals.com/static/og-fusionhub.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://serviceshub.arciumsignals.com/static/og-fusionhub.png">
+<script src="/static/nav-loader.js" data-current="serviceshub" defer></script>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="/">Arcium <span class="brand-blue">Fusion Hub</span></a>
+  </div>
+</header>
+<main class="wrap hero">
+  <div class="logos logos-hero">
+    <img class="logo-arcium logo-financial" src="/static/arcium-financial-logo.png" alt="Arcium Financial" width="753" height="583">
+  </div>
+  <h1>Tools for the Arcium site, hubs and apps.</h1>
+  <p>Scanners and research workbooks that run on Arcium's servers. You bring the idea - a target price, a
+    moving average, a pair - and the tools do the scanning. Used by the Arcium Options Scanner app.</p>
+  <p><a class="btn" href="/trader">Open Trader</a></p>
+  <div class="status" id="status"></div>
+  <div class="tools" id="tools"></div>
+</main>
+<script>
+(function () {
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  fetch('/v1/status').then(function (r) { return r.json(); }).then(function (s) {
+    document.getElementById('status').textContent = 'Market data: ' + s.dataDelay;
+  }).catch(function () {});
+  fetch('/v1/tools').then(function (r) { return r.json(); }).then(function (j) {
+    document.getElementById('tools').innerHTML = j.tools.map(function (t) {
+      return '<div class="card"><h2>' + esc(t.title) + '</h2><p>' + esc(t.description) + '</p>' +
+        t.routes.map(function (r) {
+          var p = r.split(' ');
+          return '<code>' + p[0] + ' /v1/tools/' + esc(t.id) + '/' + esc(p[1]) + '</code>';
+        }).join('<br>') + '</div>';
+    }).join('');
+  });
+})();
+</script>
+</body>
+</html>

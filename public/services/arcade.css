@@ -1,0 +1,92 @@
+/* Arcium Arcade: Matrix green and black with neon (the arciumsignals.com look). */
+:root {
+  --bg: #040705; --panel: #0a130d; --panel-2: #0d160f;
+  --neon: #00ff6a; --neon-dim: #00b34d; --text: #e7f5ec; --muted: #7da68c;
+  --border: rgba(0, 255, 106, 0.18); --bad: #ff5c7a; --radius: 12px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 "Space Grotesk", system-ui, sans-serif; }
+a { color: var(--neon); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+.muted { color: var(--muted); }
+.mono, input, select { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+.top { position: sticky; top: var(--arcium-bar, 0); z-index: 10; background: rgba(4, 7, 5, 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+.top-row { display: flex; align-items: center; justify-content: space-between; height: 56px; gap: 12px; }
+.brand { font-weight: 700; letter-spacing: 0.12em; color: var(--text); text-decoration: none; }
+.brand span { color: var(--neon); text-shadow: 0 0 14px rgba(0, 255, 106, 0.55); }
+.who { font-size: 13px; color: var(--muted); display: flex; gap: 10px; align-items: center; }
+.who button { background: none; border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 4px 10px; cursor: pointer; font: inherit; }
+
+/* scrolling instrument banner */
+.ticker { overflow: hidden; border-top: 1px solid var(--border); background: #030503; }
+.ticker-track { display: flex; gap: 8px; padding: 8px 16px; width: max-content; animation: scroll 60s linear infinite; }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+@keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce), (hover: none) {   /* touch screens: swipe the strip instead of chasing it */
+  .ticker-track { animation: none; } .ticker { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .ticker .chip.dup { display: none; }
+}
+.ticker:focus-within .ticker-track { animation-play-state: paused; }
+.chip { display: flex; gap: 8px; align-items: baseline; padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px;
+  background: var(--panel); color: var(--text); cursor: pointer; font-family: "JetBrains Mono", monospace; font-size: 13px; white-space: nowrap; }
+.chip:hover, .chip.on { border-color: var(--neon); box-shadow: 0 0 14px rgba(0, 255, 106, 0.3); }
+.chip b { font-family: "Space Grotesk", sans-serif; }
+.up { color: var(--neon); } .down { color: var(--bad); }
+
+main.wrap { padding-top: 18px; padding-bottom: 60px; display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+#game { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.panel { min-width: 0; }
+@media (max-width: 600px) { .who .email { display: none; } .stats { gap: 10px 16px; } .ticket-head input { width: 100%; } }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.panel h2 { margin: 0 0 10px; font-size: 16px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.login { max-width: 420px; margin: 50px auto; display: grid; gap: 12px; }
+.login h1 { margin: 0; font-size: 24px; text-shadow: 0 0 18px rgba(0, 255, 106, 0.35); }
+label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+input, select { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 10px; font-size: 14px; min-width: 0; }
+input:focus, select:focus { outline: none; border-color: var(--neon); }
+.btn { background: linear-gradient(135deg, var(--neon), var(--neon-dim)); color: #01180b; border: 0; border-radius: 8px; padding: 9px 16px;
+  font: 600 14px "Space Grotesk", sans-serif; cursor: pointer; box-shadow: 0 0 18px rgba(0, 255, 106, 0.35); }
+.btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); box-shadow: none; }
+.btn.small { padding: 4px 10px; font-size: 12px; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.error { color: var(--bad); font-size: 13px; min-height: 1em; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+.grow { flex: 1; min-width: 200px; }
+.stats { display: flex; gap: 18px; flex-wrap: wrap; font-family: "JetBrains Mono", monospace; font-size: 13px; }
+.stats div span { display: block; color: var(--muted); font-size: 11px; font-family: "Space Grotesk", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; }
+.new-account summary { cursor: pointer; color: var(--neon); margin-top: 10px; font-size: 14px; }
+.new-account form { margin-top: 10px; }
+
+.ticket-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.sym { font-size: 20px; font-weight: 700; }
+.spot { font-family: "JetBrains Mono", monospace; color: var(--neon); font-size: 18px; margin-left: 8px; }
+.kinds { display: flex; gap: 6px; margin-bottom: 12px; }
+.kinds button { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 5px 14px; cursor: pointer; font: inherit; }
+.kinds button.on { color: #01180b; background: var(--neon); border-color: var(--neon); }
+.order { display: grid; gap: 12px; }
+.order .row label { min-width: 120px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button { background: transparent; border: 0; color: var(--muted); padding: 8px 14px; cursor: pointer; font: inherit; }
+.seg button.on { background: var(--neon); color: #01180b; }
+.preview { font-family: "JetBrains Mono", monospace; font-size: 13px; color: var(--muted); }
+.preview b { color: var(--text); }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 7px 8px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+td.num, th.num { text-align: right; font-family: "JetBrains Mono", monospace; }
+tr.strike-row { cursor: pointer; } tr.strike-row:hover td { background: rgba(0, 255, 106, 0.06); }
+tr.strike-row.on td { background: rgba(0, 255, 106, 0.14); }
+.chain { max-height: 280px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+.pill { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); }
+.pill.long { color: var(--neon); } .pill.short { color: var(--bad); }
+@media (max-width: 600px) { .sym { font-size: 17px; } .top-row { height: 50px; } }
+
+/* Sign in with Arcium */
+.sso-new { margin: 0; font-size: 13px; }
+.pw-login summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.pw-login[open] { display: grid; gap: 10px; }
+.pw-login[open] summary { margin-bottom: 4px; }

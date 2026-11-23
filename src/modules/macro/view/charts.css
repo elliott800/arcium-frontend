@@ -1,0 +1,78 @@
+/* Macro dashboard: charts, chips and the plug-in notes (macro factors, watchlist comparison, analysis chart).
+   Uses the workspace tokens (src/shell/shell.css); charts are the Arcium chart (src/lib/arcium-chart.ts). */
+.m-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin: 0 0 18px; }
+.m-tab { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; }
+.m-tab.on { border-color: var(--accent); color: var(--text); background: var(--accent-soft); }
+.m-tab:disabled { opacity: .5; cursor: default; }
+.m-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 14px; }
+.m-select, .m-search { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font: inherit; font-size: 13px; }
+.m-search { flex: 1 1 220px; min-width: 0; }
+
+.m-group { margin: 22px 0 8px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.m-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.m-card { position: relative; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px 10px; display: grid; gap: 2px; cursor: pointer; font: inherit; color: inherit; min-width: 0; }
+.m-card:hover { border-color: var(--accent); }
+.m-card.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.m-card-name { font-size: 12.5px; color: var(--muted); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-card-value { font-size: 22px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.m-card-value small { font-size: 13px; font-weight: 600; color: var(--muted); margin-left: 4px; }
+.m-card-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.m-up { color: var(--good); }
+.m-down { color: var(--bad); }
+.m-flat { color: var(--muted); }
+.m-spark { display: block; width: 100%; height: 26px; margin-top: 4px; }
+.m-card.missing { cursor: default; border-style: dashed; }
+.m-card.missing .m-card-value { font-size: 13px; font-weight: 600; color: var(--warn); }
+.m-plug { font-size: 12.5px; color: var(--muted); }
+.m-plug code { font-size: 12.5px; color: var(--text); background: color-mix(in srgb, var(--text) 6%, transparent); border-radius: 4px; padding: 0 4px; }
+
+.m-detail { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px 8px; margin: 8px 0 18px; }
+.m-detail-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between; margin-bottom: 6px; }
+.m-detail-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.m-seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.m-seg button { background: none; border: 0; color: var(--muted); font: inherit; font-size: 13px; padding: 5px 10px; cursor: pointer; }
+.m-seg button.on { background: var(--accent-soft); color: var(--text); }
+.m-chart { --ac-bg: var(--surface); --ac-text: var(--text); --ac-muted: var(--muted); --ac-grid: var(--border); }
+.m-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.m-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; border-radius: 999px; padding: 3px 6px 3px 10px; background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--text); }
+.m-chip i { width: 8px; height: 8px; border-radius: 2px; }
+.m-chip button { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; padding: 0 2px; }
+.m-note { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+
+
+.m-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.m-table th, .m-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.m-table th { font-size: 12.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; background: var(--surface); position: sticky; top: 0; }
+.m-table td.num, .m-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.m-table tbody tr { cursor: pointer; }
+.m-table tbody tr:hover, .m-table tbody tr.on { background: var(--accent-soft); }
+.m-table small { color: var(--muted); }
+.m-flag { display: inline-block; font-size: 12.5px; border-radius: 999px; padding: 1px 7px; margin-right: 4px; background: rgba(245, 158, 11, .14); color: var(--warn); }
+a.m-tab { text-decoration: none; display: inline-flex; align-items: center; }
+.m-sort { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; }
+.m-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 8px; vertical-align: middle; }
+.m-corr td, .m-corr th { min-width: 52px; }
+.m-seg button:disabled { opacity: .45; cursor: default; }
+
+@media (max-width: 760px) {
+  .m-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .m-card-value { font-size: 18px; }
+}
+
+/* Highlight scanner: small square weekly candle charts, ticker and options liquidity above each. */
+.fu-scan-page { display: grid; gap: 22px; padding: 16px; }
+.fu-scan-intro h1 { margin: 0 0 6px; font-size: 1.4rem; }
+.fu-scan-intro p { margin: 0 0 6px; max-width: 70ch; line-height: 1.45; }
+.fu-scan-meta { color: var(--muted, #6b7280); font-size: .85rem; }
+.fu-scan-section h2 { margin: 0 0 10px; font-size: 1.1rem; }
+.fu-scan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.fu-scan { border: 1px solid var(--border, #d1d5db); border-radius: 8px; padding: 8px; background: var(--card, #fff); }
+.fu-scan-long { border-top: 3px solid #1f9d55; }
+.fu-scan-short { border-top: 3px solid #d64545; }
+.fu-scan-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.fu-scan-sym { font-size: 1rem; }
+.fu-scan-liq { font-size: .78rem; color: var(--muted, #4b5563); white-space: nowrap; }
+.fu-scan-chart { width: 100%; aspect-ratio: 1 / 1; min-height: 0; }
+.fu-scan-foot { display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; font-size: .75rem; margin-top: 6px; color: var(--muted, #4b5563); }
+.fu-scan-none { color: var(--muted, #6b7280); font-size: .9rem; }
+@media (max-width: 480px) { .fu-scan-grid { grid-template-columns: 1fr; } .fu-scan-page { padding: 16px; } }
