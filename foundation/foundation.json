@@ -40,12 +40,11 @@
   },
   {
    "id": "hooks",
-   "name": "Routes other services call (machine, SSO, hubs, alarm, workbench)",
+   "name": "Routes other services call (machine, SSO, hubs, workbench)",
    "files": [
     "src/app/api/machine/**/*.ts",
     "src/app/api/sso/**/*.ts",
     "src/app/api/hubs/**/*.ts",
-    "src/app/api/alarm/**/*.ts",
     "src/app/api/workbench/**/*.ts",
     "src/app/api/nav/**/*.ts",
     "src/lib/machine-auth.ts",

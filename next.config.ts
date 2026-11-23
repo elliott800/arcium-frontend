@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   // npm run sim builds into its own folder so it can run beside a normal dev server.
   distDir: process.env.NEXT_DIST_DIR || '.next',
   // Local testing of single sign-on uses 127.0.0.1 alongside the hubs; 10.0.0.* lets a phone
-  // on the home network use the dev server (e.g. to download the ArciumAlarm APK). Development only.
+  // on the home network use the dev server. Development only.
   allowedDevOrigins: ['127.0.0.1', '10.0.0.*'],
   // The dev badge sits over the workspace bar's account button (bottom left).
   devIndicators: false,

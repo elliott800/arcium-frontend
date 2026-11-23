@@ -50,7 +50,7 @@ every payload, is in contract/README.md.
    arcium production site repo. `.env.local` is git-ignored; `.env.example` holds names, never values.
    Publishing runs a secret scan and refuses a repo that holds one.
 2. **The hooks are a contract.** The routes other services call (`/api/machine/*` for the backend, `/api/sso/*`,
-   `/api/hubs/*`, `/api/nav`, `/api/alarm/*`, `/api/workbench/*`) and the settings names are listed in
+   `/api/hubs/*`, `/api/nav`, `/api/workbench/*`) and the settings names are listed in
    `contract/hooks.json` (explained in contract/README.md). Don't change or remove one without changing the
    contract in the same pull request and saying why; `npm run contract` checks this site keeps to it.
 3. **One registry, one kit.** Every dashboard is an entry in `src/modules/registry.ts`; build it from `src/ui/kit.tsx`

@@ -59,7 +59,7 @@ data/*.db-wal
 /portal.db*
 /data/
 
-# ArciumAlarm APK served by /download/alarm (large binary, copied in from python/arcium_alarm)
+# Large files kept beside the site, not in git
 /downloads/*
 # The schedule PDF is small and built from src/lib/schedule.json (scripts/schedule_pdf.py)
 !/downloads/Arcium_10_Week_Schedule.pdf

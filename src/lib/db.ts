@@ -259,29 +259,6 @@ async function migrateAccountsSchema(p: Pool): Promise<void> {
   }
 }
 
-// ArciumAlarm phone app (see src/lib/alarm.ts): one row per signed-in phone. Like sessions,
-// only the token's sha256 is stored; deleting the row signs that phone out.
-async function migrateAlarmSchema(p: Pool): Promise<void> {
-  const statements = [
-    `CREATE TABLE IF NOT EXISTS alarm_devices (
-       token_hash   text PRIMARY KEY,
-       user_id      text NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-       label        text,
-       created_at   timestamptz NOT NULL DEFAULT now(),
-       last_used_at timestamptz NOT NULL DEFAULT now(),
-       expires_at   timestamptz NOT NULL
-     )`,
-    `CREATE INDEX IF NOT EXISTS alarm_devices_user_idx ON alarm_devices (user_id)`,
-  ];
-  for (const sql of statements) {
-    try {
-      await p.query(sql);
-    } catch (err) {
-      if (!isBenignRaceError(err)) throw err;
-    }
-  }
-}
-
 // The owner's project schedule (/control/schedule): which tasks of src/lib/schedule-release1.json are
 // done, and when. Tasks live in the JSON; only the ticks live here.
 async function migrateScheduleSchema(p: Pool): Promise<void> {
@@ -879,7 +856,6 @@ async function runInitSchemaDDL(p: Pool): Promise<void> {
   await migrateUsernameSchema(p);
   await migrateAccountsSchema(p);
   await migrateHubSchema(p);
-  await migrateAlarmSchema(p);
   await migrateScheduleSchema(p);
   try {
     await migratePlaintextSecrets(p);

@@ -21,8 +21,6 @@ const PUBLIC_PREFIXES = ['/api/login', '/api/logout', '/api/invite/accept', '/ap
   '/api/hubs/',
   // The Dashboards menu on every Arcium site: signed out it lists the public dashboards (src/app/api/nav).
   '/api/nav',
-  // ArciumAlarm phone app: signs in with the Arcium account, then uses its own device token (src/lib/alarm.ts).
-  '/api/alarm/',
   // The seed workbench (arcium-signals): signs in with the Arcium account, then a bearer token (src/lib/workbench.ts).
   '/api/workbench/'];
 

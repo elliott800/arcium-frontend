@@ -123,9 +123,6 @@
    "SMTP_PASS",
    "MAIL_FROM",
    "RESEND_API_KEY",
-   "ANTHROPIC_API_KEY",
-   "ALARM_MODEL",
-   "ALARM_ACCESS",
    "REVIEWS_DIR",
    "GITHUB_REVIEW_TOKEN",
    "NEXT_DIST_DIR"
@@ -145,7 +142,7 @@
   ]
  },
  "site_routes": {
-  "about": "Routes and pages other services reach on the app (not the backend): the hubs' single sign-on and repos, the Dashboards menu script, the ArciumAlarm phone app, the seed workbench, passkeys, sign-in. The frontend must keep serving each.",
+  "about": "Routes and pages other services reach on the app (not the backend): the hubs' single sign-on and repos, the Dashboards menu script, the seed workbench, passkeys, sign-in. The frontend must keep serving each.",
   "routes": [
    {
     "path": "/api/sso/accept",
@@ -186,18 +183,6 @@
    {
     "path": "/api/nav",
     "caller": "arcium-nav.js on every Arcium site"
-   },
-   {
-    "path": "/api/alarm/login",
-    "caller": "ArciumAlarm app"
-   },
-   {
-    "path": "/api/alarm/logout",
-    "caller": "ArciumAlarm app"
-   },
-   {
-    "path": "/api/alarm/command",
-    "caller": "ArciumAlarm app"
    },
    {
     "path": "/api/workbench/login",

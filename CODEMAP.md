@@ -57,7 +57,7 @@ They lint with warnings, not errors. Rebuilding one on the kit and deleting its 
 |---|---|
 | Database tables and queries (shared with production: add columns, never drop) | `src/lib/db.ts` |
 | Sessions, users, admin checks | `src/lib/auth.ts`, `src/lib/accounts.ts`, `src/lib/profile.ts` |
-| Routes other services call (the hooks contract) | `src/app/api/{machine,sso,hubs,nav,alarm,workbench}/` (listed in `contract/hooks.json`; payloads in contract/README.md) |
+| Routes other services call (the hooks contract) | `src/app/api/{machine,sso,hubs,nav,workbench}/` (listed in `contract/hooks.json`; payloads in contract/README.md) |
 | Demo mode | `src/lib/site-mode.ts`, `src/lib/demo.ts`, `scripts/local-demo.mjs` |
 | The Services Hub and the Arcade (serviceshub. / arcade. hosts) | pages: `public/services/` (index, trader, arcade); routing: `src/proxy.ts` servicesHost, `src/lib/hosts.ts`; sign-in: client `fusionhub` in `src/lib/sso.ts`; simulated /v1 API: `src/lib/sim-services.ts`, `src/app/api/sim/services/` |
 | Simulated backend (local development) | `npm run sim`: `scripts/sim.mjs`, `src/lib/sim-db.ts` (in-process Postgres), `sim/warehouse.sql`, `scripts/demo-seed.mjs`; `npm run mock:machine`: `scripts/mock-machine.mjs` (a controller on the real hooks) |

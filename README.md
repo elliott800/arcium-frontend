@@ -51,7 +51,7 @@ routes behind each part.
 | `src/shell/` | The workspace shell (dockable bar, side panel, tabs, workspaces) and its stylesheet with the `m-*` kit. |
 | `src/ui/kit.tsx` | What dashboards share: `useJson`, `Table`, `Page`, `sendControl`, `ago`, `num`. |
 | `src/app/w/` | The workspace routes: `/w` and `/w/<dashboard id>`. |
-| `src/app/api/` | The routes: the dashboards' data, plus the hooks other services call (machine, SSO, hubs, alarm, workbench). |
+| `src/app/api/` | The routes: the dashboards' data, plus the hooks other services call (machine, SSO, hubs, workbench). |
 | `src/legacy/` | Panels kept from the old site until rewritten with the kit (`compat.css` styles them). |
 
 ## Adding a dashboard
@@ -96,7 +96,7 @@ the code in the same pull request; the owner updates the backend to match.
 
 Only through the hooks in `contract/hooks.json` (explained, with payloads, in contract/README.md): the
 `/api/machine/*` routes the backend calls with its `X-Machine-Name` / `X-Machine-Key` headers, and the site's
-own database. The same contract lists the routes the hubs, the ArciumAlarm app and the seed workbench use, so the
+own database. The same contract lists the routes the hubs and the seed workbench use, so the
 slim build cannot drop them unnoticed. `npm run mock:machine` plays the backend through these hooks.
 
     npm run contract                the site still serves every hook (part of npm run check and CI)
