@@ -1,8 +1,11 @@
 'use client';
 
-// Sign in: one Arcium account for the app and every hub. Already signed in, or after signing in, go to
-// ?next (a page of this site, or a hub page) or the workspace. On the demo site (ARCIUM_SITE_MODE=demo)
-// visitors start a throwaway test session on simulated systems instead (src/lib/demo.ts).
+// Sign in: one Arcium account for the app and every hub, three ways in.
+//   Sign in   a real account: the workspace once the owner has granted it access, its user dashboard (/home) until then
+//   User      a simulated user profile for this session: a throwaway test session on simulated systems, with its own
+//             data, functions and settings, deleted when it ends (src/lib/demo.ts)
+//   Admin     the owner: the admin dashboard (the sign-in form's Admin button: the owner's passkey)
+// Already signed in, or after signing in, go to ?next (a page of this site, or a hub page) or the workspace.
 import { useEffect, useState } from 'react';
 import { AuthCard, BASE, Shell, postJson, useSiteInfo } from './_public/Shell';
 import { SignInForm } from './_public/SignInForm';
@@ -19,7 +22,6 @@ export default function SignInPage() {
   const info = useSiteInfo();
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState('');
-  const [owner, setOwner] = useState(false);
 
   useEffect(() => {
     fetch(`${BASE}/api/sso/me`).then(r => (r.ok ? r.json() : null)).then(me => {
@@ -31,34 +33,26 @@ export default function SignInPage() {
     setError('');
     setStarting(true);
     const { ok, data } = await postJson('/api/demo/start', {});
-    if (!ok) { setStarting(false); setError(data.error ?? 'Could not start a test session.'); return; }
+    if (!ok) { setStarting(false); setError(data.error ?? 'Could not start a simulated session.'); return; }
     window.location.href = `${BASE}/w/factory.silos`;
   }
 
   return (
-    <Shell actions={info?.demo_url ? <a className={t.btn} href={info.demo_url}>Try the demo</a> : undefined}>
-      {info?.test_sessions && (
-        <AuthCard title="Try Arcium Signals" intro={<>
-          Start a private test session on simulated trading systems: the silos, the model catalog, the engines and
-          their equity, and the Portfolio Maker. Nothing is kept: the session and everything in it are deleted after{' '}
-          {info.test_session_hours ?? 2} hours or when you sign out.
-        </>}>
-          <button type="button" className={`${t.btn} ${t.primary}`} onClick={startTestSession} disabled={starting}>
-            {starting ? 'Starting…' : 'Start a test session'}
-          </button>
-          <div className={t.error} role="alert">{error}</div>
-          {!owner && (
-            <div className={t.links}>
-              <button type="button" className={t.linkBtn} onClick={() => setOwner(true)}>Owner sign-in</button>
-            </div>
-          )}
-        </AuthCard>
-      )}
-      {info && (!info.test_sessions || owner) && (
-        <AuthCard title="Sign in" intro="One Arcium account for every Arcium site. Sign in with your username or email.">
-          <SignInForm onSignedIn={() => { window.location.href = landing(); }} />
-        </AuthCard>
-      )}
+    <Shell>
+      <AuthCard title="Sign in" intro="One Arcium account for every Arcium site. Admin takes the owner to the admin dashboard; an account signs in to its dashboard, which shows the functions it can use.">
+        <SignInForm onSignedIn={() => { window.location.href = landing(); }} />
+        {info?.test_sessions && (
+          <div className={t.links} style={{ display: 'block', marginTop: 18 }}>
+            <p style={{ margin: '0 0 8px' }}>No account? Explore as a simulated user: simulated silos, models, engines and their
+              equity, the Portfolio Maker, and your own settings, for this session only (deleted after {info.test_session_hours ?? 2} hours
+              or when you sign out).</p>
+            <button type="button" className={t.btn} onClick={startTestSession} disabled={starting}>
+              {starting ? 'Starting…' : 'User'}
+            </button>
+            <div className={t.error} role="alert">{error}</div>
+          </div>
+        )}
+      </AuthCard>
     </Shell>
   );
 }

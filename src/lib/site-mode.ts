@@ -13,6 +13,10 @@ export const SITE_MODE: SiteMode = process.env.ARCIUM_SITE_MODE === 'demo' ? 'de
 
 export const isDemo = SITE_MODE === 'demo';
 
+/** The sign-in page's User button: a throwaway test session on simulated systems (src/lib/demo.ts), on the live
+ *  site too since the demo site was retired (Nov 23, 2026). ARCIUM_TEST_SESSIONS=false turns it off. */
+export const TEST_SESSIONS = isDemo || process.env.ARCIUM_TEST_SESSIONS !== 'false';
+
 /** Arcium account sign-up, off unless ARCIUM_SIGNUP_OPEN=true. On the live
  *  site this makes the one Arcium account used across every Arcium site (see
  *  src/lib/sso.ts); it still only reaches the portal if it's the owner's. The

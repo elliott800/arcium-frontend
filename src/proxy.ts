@@ -21,6 +21,8 @@ const PUBLIC_PREFIXES = ['/api/login', '/api/logout', '/api/invite/accept', '/ap
   '/api/hubs/',
   // The Dashboards menu on every Arcium site: signed out it lists the public dashboards (src/app/api/nav).
   '/api/nav',
+  // The user dashboard's Request access: an account without the portal's functions (it checks the account itself).
+  '/api/access/',
   // The seed workbench (arcium-signals): signs in with the Arcium account, then a bearer token (src/lib/workbench.ts).
   '/api/workbench/'];
 
@@ -30,7 +32,7 @@ const PUBLIC_PREFIXES = ['/api/login', '/api/logout', '/api/invite/accept', '/ap
 const DEMO_MACHINE_ACTIONS = ['/api/scripts/dispatch', '/api/engines/', '/api/optimizers/', '/api/processes/',
   '/api/sources', '/api/seeds', '/api/accounts', '/api/admin/sources', '/api/admin/services'];
 const DEMO_ACTION_MESSAGE =
-  "This is the demo: its machines are simulated, so jobs don't run here. Everything you see comes from simulated runs.";
+  "This is a simulated session: its machine is simulated, so jobs don't run here. Everything you see comes from simulated runs.";
 
 // datahub.arciumsignals.com (src/lib/hosts.ts): the Data Hub page at its root, its own APIs, and the sign-in hand-off.
 // Everything else on that host belongs to the app, so it goes there. Files (a dot in the last segment) are served here.
@@ -128,7 +130,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.json({ error: 'Not signed in.' }, { status: 401 });
   }
 
-  if (isDemo && req.method !== 'GET'
+  if ((isDemo || user.demo_expires_at) && req.method !== 'GET'
       && DEMO_MACHINE_ACTIONS.some(p => path === p || path.startsWith(p.endsWith('/') ? p : p + '/'))) {
     return NextResponse.json({ error: DEMO_ACTION_MESSAGE, code: 'DEMO_SIMULATED' }, { status: 409 });
   }

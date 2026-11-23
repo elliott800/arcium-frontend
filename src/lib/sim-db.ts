@@ -124,6 +124,12 @@ export async function seedSimulatedSystems(pool: SimPool): Promise<void> {
     } finally {
       client.release();
     }
+    // An ordinary account without the portal's functions (alice / sim-user-password): it signs in to the user
+    // dashboard (/home) and can ask for access, which the owner grants in Control panel > Users.
+    const { hashPassword } = await import('./db');
+    await pool.query(`INSERT INTO users (user_id, username, username_email, password_hash, role, approval, email_verified_at, active)
+                      VALUES ('sim-user-alice', 'alice', 'alice@example.com', $1, 'user', 'approved', now(), 1)
+                      ON CONFLICT DO NOTHING`, [hashPassword('sim-user-password')]);
     // The simulated owner sees the same simulated systems a test session gets.
     const owner = await pool.query(`SELECT username FROM users WHERE username_email = $1`, [process.env.ARCIUM_ADMIN_EMAIL ?? '']);
     const name = owner.rows[0]?.username;

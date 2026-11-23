@@ -24,7 +24,7 @@ if (args.includes('--reset')) {        // the database and the build cache (a st
 const env = {
   ...process.env,
   DATABASE_URL: `sim:${simDir()}`,         // .sim-db/, or ARCIUM_SIM_DIR (scripts/sim-dir.mjs)
-  ARCIUM_SITE_MODE: 'demo',
+  ARCIUM_SITE_MODE: process.env.ARCIUM_SITE_MODE || 'demo',   // ARCIUM_SITE_MODE=live npm run sim: as production
   // Local-only placeholders: the simulated database is made with these, so they are not secrets.
   ARCIUM_SECRET_KEY: '73696d2d6c6f63616c2d6f6e6c792d6b65792d6e6f742d612d7365637265742e',
   ARCIUM_ADMIN_EMAIL: 'admin@example.com',

@@ -355,6 +355,9 @@ async function migrateUsernameSchema(p: Pool): Promise<void> {
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS approved_at timestamptz`,
     // Demo test sessions: throwaway users deleted (with their rows) at this time.
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS demo_expires_at timestamptz`,
+    // The owner grants each account the portal's functions (Factory, Portfolio Maker); a user can ask for it.
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS portal_access boolean NOT NULL DEFAULT false`,
+    `ALTER TABLE users ADD COLUMN IF NOT EXISTS portal_requested_at timestamptz`,
     // Single sign-on: an account is one person across the Arcium sites, matched by email or phone.
     `ALTER TABLE users ADD COLUMN IF NOT EXISTS phone text`,
     `CREATE UNIQUE INDEX IF NOT EXISTS users_phone_key ON users (phone) WHERE phone IS NOT NULL`,
@@ -1041,10 +1044,10 @@ export async function getMachines() {
   return getDb().prepare(`
     SELECT machine_id, machine_name, hostname, platform, silo_db_dir, last_heartbeat,
            registered_at, registered_by, dir_tree, (api_key_hash IS NOT NULL) AS registered,
-           capacity, accepts_accounts, load_json, live_status, live_status_at,
+           capacity, accepts_accounts, load_json, live_status, live_status_at,   -- npm run sim: the mock machine is the owner's
            (SELECT count(*)::int FROM accounts a WHERE a.machine_name = machines.machine_name AND NOT a.removed) AS account_count
-    FROM machines ORDER BY machine_name
-  `).all();
+    FROM machines WHERE machine_name <> 'demo_machine' OR ? ORDER BY machine_name
+  `).all(isSimUrl(process.env.DATABASE_URL));
 }
 
 export async function setMachineCapacity(machineName: string, capacity: number, acceptsAccounts: boolean): Promise<boolean> {
@@ -1275,7 +1278,7 @@ export function stripEmail(username: string): string {
 
 export async function getCatalogSources(username: string, isAdmin = false): Promise<string[]> {
   const stripped = stripEmail(username);
-  const uc = isAdmin ? '1=1' : '(username = ? OR username = ?)';
+  const uc = isAdmin ? "username NOT IN (SELECT username FROM users WHERE demo_expires_at IS NOT NULL AND username IS NOT NULL) AND username <> 'demo_template'" : '(username = ? OR username = ?)';   // the owner: all but test sessions
   const rows = await getDb().prepare(`
     SELECT DISTINCT catalog_source FROM (
       SELECT catalog_source FROM catalog_signals
@@ -1314,7 +1317,7 @@ export async function getCatalogTableRows(username: string, tableKind: string, s
     tableKind === 'stats' ? 'catalog_signal_stats' :
     'catalog_signals';
   const params: unknown[] = isAdmin ? [] : [username, stripped];
-  let where = isAdmin ? 'WHERE 1=1' : 'WHERE username IN (?, ?)';
+  let where = isAdmin ? "WHERE username NOT IN (SELECT username FROM users WHERE demo_expires_at IS NOT NULL AND username IS NOT NULL) AND username <> 'demo_template'" : 'WHERE username IN (?, ?)';
   if (source && source !== '__all__') {
     if (source === '__manager__') {
       where += ` AND catalog_source NOT LIKE 'stack/%'`;

@@ -2,12 +2,12 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 import { createSession, setSessionCookie } from '@/lib/auth';
-import { isDemo } from '@/lib/site-mode';
+import { TEST_SESSIONS } from '@/lib/site-mode';
 import { createDemoUser, DemoUnavailable } from '@/lib/demo';
 import { clientIp, rateLimit } from '@/lib/signup';
 
 export async function POST(req: NextRequest) {
-  if (!isDemo) return NextResponse.json({ error: 'Test sessions are on the demo site.' }, { status: 404 });
+  if (!TEST_SESSIONS) return NextResponse.json({ error: 'Test sessions are off.' }, { status: 404 });
   if (!rateLimit(`demo-start:${clientIp(req)}`, 10, 60 * 60_000)) {
     return NextResponse.json({ error: 'Too many test sessions from here. Try again in an hour.' }, { status: 429 });
   }

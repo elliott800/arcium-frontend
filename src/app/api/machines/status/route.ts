@@ -5,6 +5,7 @@ import { getDb } from '@/lib/db';
 import { requireUser } from '@/lib/auth';
 import { isDemo } from '@/lib/site-mode';
 import { DEMO_MACHINE, touchDemoMachine } from '@/lib/demo';
+import { isSimUrl } from '@/lib/sim-db';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   const user = await requireUser(req);
   if (user instanceof NextResponse) return user;
   const db = getDb();
-  if (isDemo) {
+  if (isDemo || user.demo_expires_at) {
     await touchDemoMachine();
     const silos = await db.prepare(`SELECT silo_name FROM silo_registry WHERE username = ? ORDER BY silo_name`)
       .all(user.username) as { silo_name: string }[];
@@ -43,6 +44,6 @@ export async function GET(req: NextRequest) {
   }
   const machines = await db.prepare(`
     SELECT machine_name, hostname, platform, last_heartbeat, live_status, live_status_at
-    FROM machines ORDER BY machine_name`).all();
+    FROM machines WHERE machine_name <> ? OR ? ORDER BY machine_name`).all(DEMO_MACHINE, isSimUrl(process.env.DATABASE_URL));   // npm run sim: the mock machine is the owner's
   return NextResponse.json({ can_control: user.role === 'admin', demo: false, machines });
 }

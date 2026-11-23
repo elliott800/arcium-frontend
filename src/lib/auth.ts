@@ -19,12 +19,13 @@ export interface SessionUser {
   demo_expires_at: string | null;   // set for demo test sessions: when the account is deleted
 }
 
-/** Whether an account may hold a session on this deployment: verified and
- *  approved, and on the live site only admins (the owner) — everyone else
- *  uses the demo site. */
-export function mayUseSite(u: { role: string | null; approval: string | null; email_verified_at: unknown }): boolean {
+/** Whether an account may use the portal (the workspace and its API): verified and approved, and then the owner
+ *  (admin), an account the owner granted access (portal_access), or a test session (the "User" button: a simulated
+ *  profile for that session). Other accounts sign in to their user dashboard (/home) and ask for access there. */
+export function mayUseSite(u: { role: string | null; approval: string | null; email_verified_at: unknown;
+                               demo_expires_at?: unknown; portal_access?: boolean | null }): boolean {
   if (u.approval !== 'approved' || !u.email_verified_at) return false;
-  return isDemo || u.role === 'admin';
+  return isDemo || u.role === 'admin' || !!u.demo_expires_at || !!u.portal_access;
 }
 
 export function hashToken(token: string): string {
@@ -60,6 +61,7 @@ export async function destroyUserSessions(userId: string, exceptToken?: string):
 interface SessionRow {
   user_id: string; username_email: string; username: string; role: string; must_reset_password: boolean;
   approval: string; email_verified_at: unknown; demo_expires_at: Date | string | null; phone: string | null;
+  portal_access: boolean | null;
 }
 
 async function sessionRow(token: string | undefined): Promise<SessionRow | undefined> {
@@ -70,7 +72,7 @@ async function sessionRow(token: string | undefined): Promise<SessionRow | undef
     WHERE s.token_hash = ? AND s.expires_at > now() AND u.user_id = s.user_id AND u.active = 1
       AND (u.demo_expires_at IS NULL OR u.demo_expires_at > now())
     RETURNING u.user_id, u.username_email, u.username, u.role, u.must_reset_password,
-              u.approval, u.email_verified_at, u.demo_expires_at, u.phone
+              u.approval, u.email_verified_at, u.demo_expires_at, u.phone, u.portal_access
   `).get(hashToken(token)) as Promise<SessionRow | undefined>;
 }
 
