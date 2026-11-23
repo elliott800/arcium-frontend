@@ -116,16 +116,21 @@ export async function sendApprovedEmail(req: NextRequest, to: string, username: 
   });
 }
 
-export async function notifyAdminsOfSignup(req: NextRequest, username: string, email: string) {
+/** Tells the owner about a confirmed sign-up: waiting for approval, or (approved) able to sign in and ask for access. */
+export async function notifyAdminsOfSignup(req: NextRequest, username: string, email: string, waiting = true) {
   const admins = await getDb().prepare(
     `SELECT username_email FROM users WHERE role = 'admin' AND active = 1`
   ).all() as { username_email: string }[];
+  const href = `${siteBase(req)}/w/control.users`;
+  const title = waiting ? `Sign-up waiting for approval: ${username}` : `New Arcium account: ${username}`;
+  const what = waiting ? 'confirmed their email and is waiting for your approval.'
+    : 'confirmed their email and can sign in. Their functions stay locked until you grant access.';
   for (const a of admins) {
     await sendMail({
-      to: a.username_email, subject: `Sign-up waiting for approval: ${username}`,
-      text: `${username} <${email}> confirmed their email and is waiting for approval.\n\nReview it in the portal: ${siteBase(req)}/portal`,
-      html: layout('Sign-up waiting for approval', `<p><strong>${esc(username)}</strong> &lt;${esc(email)}&gt; confirmed their email and is waiting for your approval.</p>`,
-        { href: `${siteBase(req)}/portal`, label: 'Review in the portal' }),
+      to: a.username_email, subject: title,
+      text: `${username} <${email}> ${what}\n\nControl panel > Users: ${href}`,
+      html: layout(waiting ? 'Sign-up waiting for approval' : 'New Arcium account',
+        `<p><strong>${esc(username)}</strong> &lt;${esc(email)}&gt; ${what}</p>`, { href, label: 'Open Control panel > Users' }),
     });
   }
 }

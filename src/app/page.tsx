@@ -7,6 +7,7 @@
 //   Admin     the owner: the admin dashboard (the sign-in form's Admin button: the owner's passkey)
 // Already signed in, or after signing in, go to ?next (a page of this site, or a hub page) or the workspace.
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { AuthCard, BASE, Shell, postJson, useSiteInfo } from './_public/Shell';
 import { SignInForm } from './_public/SignInForm';
 import t from './_public/theme.module.css';
@@ -41,6 +42,7 @@ export default function SignInPage() {
     <Shell>
       <AuthCard title="Sign in" intro="One Arcium account for every Arcium site. Admin takes the owner to the admin dashboard; an account signs in to its dashboard, which shows the functions it can use.">
         <SignInForm onSignedIn={() => { window.location.href = landing(); }} />
+        {info?.signup_open && <div className={t.links}><span>No account yet? <Link href="/signup">Create an account</Link></span></div>}
         {info?.test_sessions && (
           <div className={t.links} style={{ display: 'block', marginTop: 18 }}>
             <p style={{ margin: '0 0 8px' }}>No account? Explore as a simulated user: simulated silos, models, engines and their

@@ -32,9 +32,7 @@ export async function POST(req: NextRequest) {
   `).get(userId) as { username: string; username_email: string; approval: string } | undefined;
   if (!user) return NextResponse.json({ error: 'Account not found.' }, { status: 404 });
 
-  if (user.approval === 'pending') {
-    try { await notifyAdminsOfSignup(req, user.username, user.username_email); }
-    catch (err) { console.error('[verify-email] admin notification failed:', err); }
-  }
+  try { await notifyAdminsOfSignup(req, user.username, user.username_email, user.approval === 'pending'); }
+  catch (err) { console.error('[verify-email] admin notification failed:', err); }
   return NextResponse.json({ ok: true, approval: user.approval });
 }
