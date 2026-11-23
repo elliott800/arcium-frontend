@@ -26,3 +26,10 @@ export const SERVICES_ORIGIN = origin(process.env.SERVICES_ORIGIN, 'https://serv
 export const ARCADE_ORIGIN = origin(process.env.ARCADE_ORIGIN, 'https://arcade.arciumsignals.com');
 export const isServicesHost = (host: string | null) => reqHostname(host) === hostname(SERVICES_ORIGIN);
 export const isArcadeHost = (host: string | null) => reqHostname(host) === hostname(ARCADE_ORIGIN);
+
+// The BrokerHub (brokerhub.arciumsignals.com, BROKERHUB_ORIGIN): the owner's broker API registry, this same app on
+// another host, signed in like the Data Hub host (single sign-on, src/app/hub-signin). Locally brokerhub.localhost.
+export const BROKERHUB_ORIGIN = origin(process.env.BROKERHUB_ORIGIN, 'https://brokerhub.arciumsignals.com');
+export const isBrokerhubHost = (host: string | null) => reqHostname(host) === hostname(BROKERHUB_ORIGIN);
+/** The owner's admin hosts (the Data Hub and the BrokerHub): sign in through single sign-on, admins only. */
+export const isAdminHubHost = (host: string | null) => isDatahubHost(host) || isBrokerhubHost(host);

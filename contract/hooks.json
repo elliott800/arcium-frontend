@@ -105,6 +105,7 @@
    "ARCIUM_SITE_MODE",
    "SERVICES_ORIGIN",
    "ARCADE_ORIGIN",
+   "BROKERHUB_ORIGIN",
    "SERVICES_API_URL"
   ],
   "site_only": [

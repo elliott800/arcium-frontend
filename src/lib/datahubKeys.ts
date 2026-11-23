@@ -10,12 +10,17 @@
 // OANDA's base_url and time zone; Webull's app_key and app_secret), so the hub can use it as it is.
 // Credentials of other kinds that a Data Hub source already uses (a broker login) are listed read-only, and the
 // settings-file references by name.
+//
+// The BrokerHub (src/lib/brokerhub.ts) keeps its broker API keys the same way, as kind "brokerhub:<connector>" (scope
+// 'brokerhub'); there the site's existing broker logins (kind "broker") are listed read-only, and "used by" means the
+// brokers registered with that key.
 
 import { getDb } from '@/lib/db';
 import { open as openSealed, seal, type Sealed } from '@/lib/secrets';
 import { queue } from '@/lib/datahubSources';
 
 export const MAX_ACCOUNTS = 100;
+export type KeyScope = 'datahub' | 'brokerhub';
 
 export interface SourceKey {
   id: string; name: string; connector: string; managed: boolean; used_by: string[]; updated_at: string;
@@ -32,8 +37,10 @@ const ref = (id: string) => `credential:${id}`;
 const mask = (v: string) => (v.length > 10 ? `••••${v.slice(-8)}` : `••••${v.slice(-4)}`);   // enough to tell accounts apart
 const str = (v: unknown) => (typeof v === 'string' ? v : v == null ? '' : String(v));
 
-async function usage(): Promise<Map<string, string[]>> {
-  const rows = await getDb().prepare(`SELECT credentials_ref AS r, connection_name AS c FROM wh_connections ORDER BY connection_name`).all() as { r: string; c: string }[];
+async function usage(scope: KeyScope = 'datahub'): Promise<Map<string, string[]>> {
+  const rows = (scope === 'brokerhub'
+    ? await getDb().prepare(`SELECT 'credential:' || credential_id::text AS r, name AS c FROM bh_brokers WHERE credential_id IS NOT NULL ORDER BY name`).all().catch(() => [])
+    : await getDb().prepare(`SELECT credentials_ref AS r, connection_name AS c FROM wh_connections ORDER BY connection_name`).all()) as { r: string; c: string }[];
   const m = new Map<string, string[]>();
   for (const x of rows) m.set(x.r, [...(m.get(x.r) ?? []), x.c]);
   return m;
@@ -70,26 +77,28 @@ async function forConnector(connector: string, v: Payload): Promise<Payload> {
 }
 
 /** Every entry (values never included) and the settings-file references in use. */
-export async function listKeys(): Promise<KeysView> {
-  const used = await usage();
+export async function listKeys(scope: KeyScope = 'datahub', brokerConnectors: string[] = []): Promise<KeysView> {
+  const used = await usage(scope);
   const rows = await getDb().prepare(`SELECT id::text AS id, kind, label, ciphertext, iv, tag, updated_at FROM credentials ORDER BY label`).all() as
     ({ id: string; kind: string; label: string; updated_at: string } & Sealed)[];
-  const types = await getDb().prepare(`SELECT DISTINCT connector_type AS t FROM wh_connections WHERE connector_type <> 'seed' ORDER BY 1`).all() as { t: string }[];
+  const types = scope === 'brokerhub' ? brokerConnectors.map(t => ({ t }))
+    : await getDb().prepare(`SELECT DISTINCT connector_type AS t FROM wh_connections WHERE connector_type <> 'seed' ORDER BY 1`).all() as { t: string }[];
   const keys: SourceKey[] = [];
   for (const r of rows) {
-    const managed = r.kind.startsWith('datahub:');
+    const managed = r.kind.startsWith(`${scope}:`);
     const usedBy = used.get(ref(r.id)) ?? [];
-    if (!managed && !usedBy.length) continue;   // other site credentials (broker logins for accounts) are not the Data Hub's
+    // the Data Hub lists other credentials only when a source uses them; the BrokerHub lists the site's broker logins
+    if (!managed && !(scope === 'brokerhub' ? r.kind === 'broker' : usedBy.length)) continue;
     let v: Payload = {};
     try { v = openSealed<Payload>(r); } catch { /* unreadable: shown with nothing set */ }
     const p = parts(v);
     keys.push({
-      id: r.id, name: r.label, connector: managed ? r.kind.slice('datahub:'.length) : (r.label.split(':')[0] || 'other'),
+      id: r.id, name: r.label, connector: managed ? r.kind.slice(scope.length + 1) : (r.label.split(':')[0] || 'other'),
       managed, used_by: usedBy, updated_at: new Date(r.updated_at).toISOString(),
       api_key: !!p.api_key, secret_key: !!p.secret_key, public_key: !!p.public_key, accounts: p.accounts.map(mask),
     });
   }
-  const settings_refs = [...used].filter(([r]) => !r.startsWith('credential:')).map(([r, c]) => ({ ref: r, used_by: c }));
+  const settings_refs = scope === 'brokerhub' ? [] : [...used].filter(([r]) => !r.startsWith('credential:')).map(([r, c]) => ({ ref: r, used_by: c }));
   return { keys, settings_refs, connectors: [...new Set([...types.map(t => t.t), 'other'])], max_accounts: MAX_ACCOUNTS };
 }
 
@@ -105,7 +114,7 @@ async function store(id: string, connector: string, v: Payload): Promise<void> {
 }
 
 /** Adds an API, or adds to one with the same name: given keys replace the stored ones, account IDs are appended. */
-export async function saveKey(body: Record<string, unknown>, owner: string): Promise<string | { error: string }> {
+export async function saveKey(body: Record<string, unknown>, owner: string, scope: KeyScope = 'datahub'): Promise<string | { error: string }> {
   const name = str(body.name).trim();
   if (!NAME.test(name)) return { error: 'API name: 2 to 60 letters, digits, spaces or . : @ ( ) _ -' };
   const given = { api_key: str(body.api_key).trim(), secret_key: str(body.secret_key).trim(), public_key: str(body.public_key).trim() };
@@ -115,7 +124,7 @@ export async function saveKey(body: Record<string, unknown>, owner: string): Pro
   if (bad) return { error: `"${bad.slice(0, 30)}" is not an account ID (letters, digits and . : @ - / _)` };
 
   const db = getDb();
-  const existing = await db.prepare(`SELECT id::text AS id, kind FROM credentials WHERE kind LIKE 'datahub:%' AND label = ?`).get(name) as { id: string; kind: string } | undefined;
+  const existing = await db.prepare(`SELECT id::text AS id, kind FROM credentials WHERE kind LIKE ? AND label = ?`).get(`${scope}:%`, name) as { id: string; kind: string } | undefined;
   if (existing) {
     const cur = await load(existing.id);
     if (!cur) return { error: 'unknown key' };
@@ -125,7 +134,7 @@ export async function saveKey(body: Record<string, unknown>, owner: string): Pro
     if (all.length > MAX_ACCOUNTS) return { error: `an API can hold at most ${MAX_ACCOUNTS} account IDs (this would make ${all.length})` };
     if (!accounts.length && !Object.values(given).some(Boolean)) return { error: `${name} already exists: give a key or account IDs to add to it` };
     v.account_ids = all;
-    await store(existing.id, existing.kind.slice('datahub:'.length), v);
+    await store(existing.id, existing.kind.slice(scope.length + 1), v);
     return existing.id;
   }
 
@@ -138,16 +147,16 @@ export async function saveKey(body: Record<string, unknown>, owner: string): Pro
   v.account_ids = unique;
   const s = seal(await forConnector(connector, v));
   const r = await db.prepare(`INSERT INTO credentials (owner_username, kind, label, ciphertext, iv, tag) VALUES (?, ?, ?, ?, ?, ?) RETURNING id::text AS id`)
-    .get(owner, `datahub:${connector}`, name, s.ciphertext, s.iv, s.tag) as { id: string };
+    .get(owner, `${scope}:${connector}`, name, s.ciphertext, s.iv, s.tag) as { id: string };
   return r.id;
 }
 
 /** Removes one part of an entry: its API key, secret key, public key, or one account ID (by position and its masked end). */
-export async function removePart(body: Record<string, unknown>): Promise<true | string> {
+export async function removePart(body: Record<string, unknown>, scope: KeyScope = 'datahub'): Promise<true | string> {
   const id = str(body.id);
   const cur = await load(id);
-  if (!cur || !cur.kind.startsWith('datahub:')) return 'only keys made on this page can be changed here';
-  const usedBy = (await usage()).get(ref(id)) ?? [];
+  if (!cur || !cur.kind.startsWith(`${scope}:`)) return 'only keys made on this page can be changed here';
+  const usedBy = (await usage(scope)).get(ref(id)) ?? [];
   const part = str(body.part);
   const v: Payload = { ...cur.v };
   if (part === 'api_key' || part === 'secret_key' || part === 'public_key') {
@@ -164,16 +173,16 @@ export async function removePart(body: Record<string, unknown>): Promise<true | 
     list.splice(i, 1);
     v.account_ids = list;
   } else return 'unknown part';
-  await store(id, cur.kind.slice('datahub:'.length), v);
+  await store(id, cur.kind.slice(scope.length + 1), v);
   return true;
 }
 
 /** Deletes an entry made here, when no Data Hub source uses it. */
-export async function deleteKey(id: string): Promise<true | string> {
+export async function deleteKey(id: string, scope: KeyScope = 'datahub'): Promise<true | string> {
   if (!UUID.test(id)) return 'unknown key';
-  const used = (await usage()).get(ref(id)) ?? [];
-  if (used.length) return `in use by ${used.join(', ')}: give those sources another key first`;
-  const r = await getDb().prepare(`DELETE FROM credentials WHERE id = ? AND kind LIKE 'datahub:%'`).run(id);
+  const used = (await usage(scope)).get(ref(id)) ?? [];
+  if (used.length) return `in use by ${used.join(', ')}: give ${scope === 'brokerhub' ? 'those brokers' : 'those sources'} another key first`;
+  const r = await getDb().prepare(`DELETE FROM credentials WHERE id = ? AND kind LIKE ?`).run(id, `${scope}:%`);
   return r.changes ? true : 'only keys made on this page can be removed here';
 }
 

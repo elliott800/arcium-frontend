@@ -34,6 +34,7 @@ const env = {
   // The Services Hub and Arcade hosts, and the single sign-on secret they share with the app (client fusionhub).
   SERVICES_ORIGIN: `http://serviceshub.localhost:${port}`,
   ARCADE_ORIGIN: `http://arcade.localhost:${port}`,
+  BROKERHUB_ORIGIN: `http://brokerhub.localhost:${port}`,
   SSO_SECRET_FUSIONHUB: '73696d2d6675736f6e6875622d73736f2d6c6f63616c2d6f6e6c792d6b6579',
 };
 const next = createRequire(import.meta.url).resolve('next/dist/bin/next');

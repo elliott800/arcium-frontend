@@ -5,6 +5,7 @@ const DATAHUB_ORIGIN = (process.env.DATAHUB_ORIGIN?.trim() || 'https://datahub.a
 // The Services Hub and Arcade hosts this app serves (src/lib/hosts.ts); locally they are *.localhost.
 const SERVICES_ORIGIN = (process.env.SERVICES_ORIGIN?.trim() || 'https://serviceshub.arciumsignals.com').replace(/\/$/, '');
 const ARCADE_ORIGIN = (process.env.ARCADE_ORIGIN?.trim() || 'https://arcade.arciumsignals.com').replace(/\/$/, '');
+const BROKERHUB_ORIGIN = (process.env.BROKERHUB_ORIGIN?.trim() || 'https://brokerhub.arciumsignals.com').replace(/\/$/, '');
 
 // Single sign-on: app.arciumsignals.com holds the one Arcium account, and the
 // other Arcium sites (Fusion Hub, the Arcade, ...) sign people in through it.
@@ -45,9 +46,10 @@ const CLIENTS: Record<string, Client> = {
   },
   datahub: {
     id: 'datahub',
-    // The Data Hub at datahub.arciumsignals.com: this same app on another host. It takes the pass at /api/sso/accept
-    // (admins only) and gives the browser a session on that host.
-    origins: [DATAHUB_ORIGIN],
+    // The owner's admin hosts, this same app on other hosts: the Data Hub (datahub.arciumsignals.com) and the
+    // BrokerHub (brokerhub.arciumsignals.com). Each takes the pass at /api/sso/accept (admins only) and gives the
+    // browser a session on that host.
+    origins: [DATAHUB_ORIGIN, BROKERHUB_ORIGIN],
   },
   leadgen: {
     id: 'leadgen',

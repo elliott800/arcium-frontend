@@ -19,7 +19,7 @@ export default function HubSignIn({ appOrigin }: { appOrigin: string }) {
       history.replaceState(null, '', window.location.pathname);          // the pass leaves the address bar at once
       let saved: { state?: string; next?: string } = {};
       try { saved = JSON.parse(sessionStorage.getItem(KEY) ?? '{}'); sessionStorage.removeItem(KEY); } catch { /* ignore */ }
-      if (!saved.state || saved.state !== hash.get('state')) { setMsg('That sign-in did not start here. Open the Data Hub again.'); return; }
+      if (!saved.state || saved.state !== hash.get('state')) { setMsg('That sign-in did not start here. Open the page again.'); return; }
       fetch('/api/sso/accept', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pass }) })
         .then(async r => {
           if (r.ok) { window.location.replace(saved.next && saved.next.startsWith('/') ? saved.next : '/'); return; }

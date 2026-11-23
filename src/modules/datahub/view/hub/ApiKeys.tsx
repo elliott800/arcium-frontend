@@ -1,6 +1,6 @@
 'use client';
 
-// API keys (Data Hub, admin only): one drill table of the data sources' APIs. Each API name holds its API key (with
+// API keys (Data Hub and BrokerHub, admin only): one drill table of the data sources' (or brokers') APIs. Each API name holds its API key (with
 // its secret key and public key under it) and its account IDs (up to 100), each with a Remove button. The form above
 // adds an API, or adds to one with the same name (keys replace the stored ones, account IDs are appended). Values are
 // stored encrypted on the server and never come back to the browser: the table shows whether a key is set, and each
@@ -8,26 +8,28 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import DrillTable from './DrillTable';
-import { api, hub, post } from './api';
+import { api } from './api';
 import type { DhNode } from '@/lib/datahubTypes';
 import type { KeysView } from '@/lib/datahubKeys';
 
 const empty = { name: '', connector: '', api_key: '', secret_key: '', public_key: '', account_ids: '' };
 const isSet = (b: boolean) => (b ? 'set' : 'not set');
 
-export default function ApiKeys({ rainbow }: { rainbow: boolean }) {
+// base: the API that stores them (the Data Hub's, or the BrokerHub's /api/admin/brokerhub); what: whose APIs they are.
+export default function ApiKeys({ rainbow, base = '/api/admin/datahub/hub', what = 'data source' }: { rainbow: boolean; base?: string; what?: string }) {
   const [view, setView] = useState<KeysView | null>(null);
   const [form, setForm] = useState(empty);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
-  const load = () => api<KeysView>(hub({ view: 'keys' })).then(setView).catch(e => setMsg((e as Error).message));
-  useEffect(() => { load(); }, []);
+  const post = (body: Record<string, unknown>) => api(base, { method: 'POST', body: JSON.stringify(body) });
+  const load = () => api<KeysView>(`${base}?view=keys`).then(setView).catch(e => setMsg((e as Error).message));
+  useEffect(() => { load(); }, [base]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tree: DhNode[] = useMemo(() => {
     if (!view) return [];
     const nodes: DhNode[] = view.keys.map(k => ({
       id: `key/${k.id}`, label: k.name, source: k.connector, tags: [], count: 2,
-      contents: `${k.managed ? '' : 'a broker login (read-only here) · '}${k.used_by.length ? `used by ${k.used_by.join(', ')}` : 'not used by a source yet'}`,
+      contents: `${k.managed ? '' : 'a broker login (read-only here) · '}${k.used_by.length ? `used by ${k.used_by.join(', ')}` : `not used by a ${what === 'broker' ? 'broker' : 'source'} yet`}`,
       children: [
         { id: `key/${k.id}/api_key`, label: 'API key', source: k.connector, tags: [], count: 2, contents: isSet(k.api_key),
           children: [
@@ -46,7 +48,7 @@ export default function ApiKeys({ rainbow }: { rainbow: boolean }) {
       children: view.settings_refs.map(r => ({ id: `settings/${r.ref}`, label: r.ref, tags: [], count: 1, contents: `used by ${r.used_by.join(', ')}` })),
     });
     return nodes;
-  }, [view]);
+  }, [view, what]);
 
   async function send(body: Record<string, unknown>, done: string) {
     setBusy(true); setMsg('');
@@ -74,7 +76,7 @@ export default function ApiKeys({ rainbow }: { rainbow: boolean }) {
   const set = (patch: Partial<typeof empty>) => setForm(f => ({ ...f, ...patch }));
   return (
     <section className="panel" aria-label="API keys">
-      <div className="panel-heading"><div><h3>API keys</h3><p>Each data source API with its API key, secret and public keys, and account IDs (up to {view.max_accounts}). Stored encrypted on the server, where the Data Hub reads them; a saved key is never shown again. Admin only.</p></div></div>
+      <div className="panel-heading"><div><h3>API keys</h3><p>Each {what} API with its API key, secret and public keys, and account IDs (up to {view.max_accounts}). Stored encrypted on the server, where the Data Hub reads them; a saved key is never shown again. Admin only.</p></div></div>
       <div className="mapping-form" aria-label="Add an API">
         <label>API NAME<input list="dh-api-names" value={form.name} onChange={e => set({ name: e.target.value })} placeholder="OANDA practice" />
           <datalist id="dh-api-names">{view.keys.filter(k => k.managed).map(k => <option key={k.id} value={k.name} />)}</datalist></label>

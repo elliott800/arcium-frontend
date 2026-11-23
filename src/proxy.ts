@@ -8,7 +8,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { SESSION_COOKIE, userFromToken } from '@/lib/auth';
 import { isDemo } from '@/lib/site-mode';
-import { APP_ORIGIN, DATAHUB_ORIGIN, isAppHost, isArcadeHost, isDatahubHost, isServicesHost } from '@/lib/hosts';
+import { APP_ORIGIN, DATAHUB_ORIGIN, isAppHost, isArcadeHost, isBrokerhubHost, isDatahubHost, isServicesHost } from '@/lib/hosts';
 
 const PUBLIC_PREFIXES = ['/api/login', '/api/logout', '/api/invite/accept', '/api/machine/',
   '/api/signup', '/api/verify-email', '/api/password-reset', '/api/site-info', '/api/demo/start',
@@ -54,6 +54,26 @@ async function datahubHost(req: NextRequest): Promise<NextResponse | null> {
   return NextResponse.rewrite(new URL('/datahub' + search, req.url));
 }
 
+// brokerhub.arciumsignals.com (src/lib/hosts.ts): the BrokerHub page at its root, its own API, and the sign-in hand-off;
+// everything else goes to the app. Signed in like the Data Hub host; admins only.
+const BROKERHUB_APIS = ['/api/admin/brokerhub/', '/api/sso/accept', '/api/me', '/api/nav', '/api/logout'];
+
+async function brokerhubHost(req: NextRequest): Promise<NextResponse | null> {
+  const { pathname: path, search } = req.nextUrl;
+  if (path.startsWith('/api/')) {
+    if (!BROKERHUB_APIS.some(p => path === p.replace(/\/$/, '') || path.startsWith(p.endsWith('/') ? p : p + '/'))) {
+      return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+    }
+    return null;                                          // the API checks below apply as on the app
+  }
+  if (path === '/hub-signin' || path.startsWith('/_next/') || isFile(path)) return NextResponse.next();
+  if (path !== '/') return NextResponse.redirect(`${APP_ORIGIN}${path}${search}`, 307);
+  const user = await userFromToken(req.cookies.get(SESSION_COOKIE)?.value);
+  if (!user) return NextResponse.redirect(new URL(`/hub-signin?next=${encodeURIComponent('/' + search)}`, req.url), 307);
+  if (user.role !== 'admin') return NextResponse.redirect(`${APP_ORIGIN}/workspace`, 307);
+  return NextResponse.rewrite(new URL('/brokerhub' + search, req.url));
+}
+
 // ── the Services Hub and the Arcade (src/lib/hosts.ts) ──
 // Their pages are files in public/services/, served as Fusion Hub served them: / (the Services Hub front page),
 // /trader, /arcade, and /static/<file>; on the Arcade's host the game is at /. Their API, /v1/..., is the Services Hub
@@ -89,8 +109,8 @@ export async function proxy(req: NextRequest) {
   const host = req.headers.get('host');
   if (isServicesHost(host)) return servicesHost(req, false);
   if (isArcadeHost(host)) return servicesHost(req, true);
-  if (isDatahubHost(host)) {
-    const res = await datahubHost(req);
+  if (isDatahubHost(host) || isBrokerhubHost(host)) {
+    const res = isDatahubHost(host) ? await datahubHost(req) : await brokerhubHost(req);
     if (res) return res;
   } else if (path === '/datahub' || path.startsWith('/datahub/')) {
     // The Data Hub lives at datahub.arciumsignals.com: the app's old address goes there.
