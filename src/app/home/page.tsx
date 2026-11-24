@@ -9,6 +9,7 @@ import { SESSION_COOKIE, accountFromToken } from '@/lib/auth';
 import { getDb } from '@/lib/db';
 import { MODULES } from '@/modules/registry';
 import RequestAccess, { SignOut } from './RequestAccess';
+import DataHubAccess from '@/modules/account/DataHubAccess';
 import '@/shell/shell.css';
 
 export const metadata: Metadata = { title: 'Your dashboard' };
@@ -30,6 +31,7 @@ export default async function UserHome() {
         <ul>{functions.map(m => <li key={m.id}><strong>{m.title}</strong> <span className="m-badge">locked</span> <small>{m.summary}</small></li>)}</ul>
         <RequestAccess requested={row?.portal_requested_at ? new Date(row.portal_requested_at).toISOString() : null} />
       </section>
+      <DataHubAccess />
       <p><SignOut /></p>
     </div>
   );

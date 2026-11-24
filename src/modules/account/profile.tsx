@@ -1,13 +1,15 @@
 'use client';
 
-// Dashboard "Your account" (account.profile): the sign-in name and phone, and the Arcium keys (passkeys) that sign
-// this person in with one click (the Admin button on the sign-in page). One Arcium account works on every Arcium site.
+// Dashboard "Your account" (account.profile): the sign-in name and phone, the Arcium keys (passkeys) that sign
+// this person in with one click (the Admin button on the sign-in page), and its Data Hub API keys and subscriptions
+// (DataHubAccess). One Arcium account works on every Arcium site.
 //
 //   API   GET /api/sso/me · POST /api/sso/profile · the passkey routes through src/app/_public/passkey.ts
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { deviceName, passkeyList, passkeyRemove, passkeySave, passkeysSupported } from '@/app/_public/passkey';
 import { Notice, Page, postJson, useJson } from '@/ui/kit';
+import DataHubAccess from './DataHubAccess';
 
 interface Me { username: string; display_name?: string; email: string; phone: string | null; role: string }
 type Key = Awaited<ReturnType<typeof passkeyList>>[number];
@@ -24,6 +26,7 @@ export default function AccountProfile() {
         <div className="m-grid m-grid-wide">
           <Details me={me} onSaved={reload} />
           <Keys admin={me.role === 'admin'} />
+          <DataHubAccess />
         </div>
       )}
     </Page>
