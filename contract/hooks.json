@@ -89,6 +89,14 @@
    ],
    "caller": "backend",
    "what": "a Data Hub warehouse read"
+  },
+  {
+   "path": "/internal/midend/bundles",
+   "methods": [
+    "GET"
+   ],
+   "caller": "midend",
+   "what": "the Data Hub's source bundles and the recordings each groups (midend data API); header X-Midend-Key"
   }
  ],
  "auth_headers": [
@@ -106,7 +114,8 @@
    "SERVICES_ORIGIN",
    "ARCADE_ORIGIN",
    "BROKERHUB_ORIGIN",
-   "SERVICES_API_URL"
+   "SERVICES_API_URL",
+   "MIDEND_SECRET"
   ],
   "site_only": [
    "NODE_ENV",

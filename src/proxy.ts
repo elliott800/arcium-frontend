@@ -11,6 +11,8 @@ import { isDemo } from '@/lib/site-mode';
 import { APP_ORIGIN, DATAHUB_ORIGIN, isAppHost, isArcadeHost, isBrokerhubHost, isDatahubHost, isServicesHost } from '@/lib/hosts';
 
 const PUBLIC_PREFIXES = ['/api/login', '/api/logout', '/api/invite/accept', '/api/machine/',
+  // The midend's server-to-server routes check MIDEND_SECRET themselves.
+  '/api/internal/midend/',
   '/api/signup', '/api/verify-email', '/api/password-reset', '/api/site-info', '/api/demo/start',
   // Single sign-on: these check the Arcium account themselves (src/lib/auth.ts accountFromToken).
   '/api/sso/',
